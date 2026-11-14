@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0610">
+<title>MARSVERSE: The Last Human on Earth</title>
+<style>
+:root{--or:#ff8a52;--cy:#8be9ff;--glass:rgba(14,10,24,.8);--line:rgba(255,150,100,.45);--w:#f6f1ec}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050309;color:var(--w);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+#game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+.fx{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0}
+#fxS{background:radial-gradient(ellipse at center,rgba(160,90,50,.15) 10%,rgba(150,80,40,.8) 100%)}
+#fxR{background:radial-gradient(ellipse at center,rgba(255,0,0,0) 40%,rgba(255,30,30,.6) 100%)}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:3}
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:7px 10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 22px #0006}
+#top{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));left:8px;right:8px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+#dayLine{font-size:9px;letter-spacing:.12em;color:var(--or);font-weight:800}#dayTitle{font-size:13px;font-weight:900;margin-top:1px}#siteLine{font-size:9px;color:#c9b8ad;margin-top:1px}
+#stats{font-size:10px;text-align:right;line-height:1.5}#stats b{color:var(--cy);font-size:14px}
+#obj{position:absolute;top:calc(74px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:520px;display:flex;gap:10px;align-items:center;border-color:rgba(139,233,255,.5)}
+#arrowWrap{text-align:center;min-width:42px}#arrow{font-size:22px;color:var(--cy);display:inline-block;transition:transform .08s linear;line-height:1}#dist{font-size:9px;color:#bfe9f5;margin-top:2px}
+#objLabel{font-size:12px;font-weight:800;line-height:1.3}#objSub{font-size:10px;color:#b9c8d6;margin-top:2px}
+#bars{position:absolute;top:calc(136px + env(safe-area-inset-top,0px));left:8px;display:flex;flex-direction:column;gap:5px;padding:7px 9px}
+.bar{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:800;letter-spacing:.05em}.bar span{width:30px}
+.bar i{display:block;width:84px;height:7px;background:#ffffff1f;border-radius:6px;overflow:hidden}.bar i b{display:block;height:100%;width:100%;border-radius:6px;transition:width .25s}
+.bar.low i{animation:blink .7s infinite}@keyframes blink{50%{opacity:.35}}
+#warnB{position:absolute;top:calc(130px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-weight:900;font-size:12px;letter-spacing:.06em;color:#fff;background:rgba(190,30,30,.85);border:1px solid #ff9a9a;border-radius:10px;padding:6px 12px;display:none;white-space:nowrap;animation:blink 1s infinite}
+#toastB{position:absolute;top:36%;left:50%;transform:translateX(-50%);max-width:86vw;text-align:center;font-size:13px;font-weight:700;display:none}
+#promptB{position:absolute;bottom:calc(178px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);font-size:12px;font-weight:800;color:#fff;text-shadow:0 2px 6px #000;background:#0b2a3acc;border:1px solid #8be9ff88;border-radius:20px;padding:6px 14px;display:none;white-space:nowrap}
+#controls{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end}
+#pad{display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:4px;pointer-events:auto}
+.ctrl{border:1px solid #ffb48f88;background:#1a1020d9;color:white;border-radius:14px;font-size:19px;font-weight:800;touch-action:none;user-select:none}.ctrl:active,.ctrl.active{background:#b0471f}
+#actions{display:flex;flex-direction:column;gap:9px;align-items:flex-end;pointer-events:auto}
+#actBtn{width:86px;height:86px;border-radius:50%;border:2px solid #8be9ff;background:radial-gradient(circle at 35% 30%,#2bb4d6,#0a5f7c);color:#fff;font-weight:900;font-size:15px;letter-spacing:.06em;touch-action:manipulation;box-shadow:0 0 0 0 #8be9ff66}
+#actBtn.ready{animation:pulse 1s infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 #8be9ffaa}100%{box-shadow:0 0 0 18px #8be9ff00}}
+#menuBtn{min-width:78px;min-height:40px;border-radius:12px;border:1px solid var(--line);background:#1a1020e8;color:white;font-weight:800;font-size:11px}
+#start{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:14px;background:linear-gradient(180deg,#0a0610d0 0%,#0a061020 35%,#0a0610e8 100%);overflow:auto}
+#startCard{max-width:470px;width:100%;text-align:center;padding:20px 18px;border:1px solid var(--line);border-radius:22px;background:#150d1fdd;backdrop-filter:blur(10px);box-shadow:0 20px 80px #000a;touch-action:pan-y}
+.kicker{letter-spacing:.18em;color:var(--or);font-size:9px;font-weight:900}
+#startCard h1{font-size:clamp(34px,11vw,56px);margin:6px 0 0;letter-spacing:.06em;background:linear-gradient(90deg,#ff7a45,#ffd0a0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{color:var(--cy);font-weight:800;font-size:13px;letter-spacing:.08em}#startCard p{color:#d6c7bd;font-size:13px;line-height:1.5;margin:10px 0}
+.lbl{font-size:10px;font-weight:900;color:#c9b8ad;letter-spacing:.12em;margin-top:10px}.chips{display:flex;gap:7px;justify-content:center;margin:7px 0;flex-wrap:wrap}
+.chip{background:#2a1c33;color:#fff;border:1px solid #6b4a5a;padding:8px 12px;border-radius:11px;font-weight:800;font-size:12px}.chip.sel{border-color:var(--cy);box-shadow:0 0 0 2px #63ddff44;background:#1e3447}
+.small{font-size:10px;color:#a99a91;margin-top:8px;line-height:1.4}
+button.big,.mbtn{display:block;width:100%;margin-top:9px;background:linear-gradient(100deg,#ff8a52,#ffc08a);color:#240c02;border:0;padding:13px 16px;border-radius:13px;font-weight:900;font-size:14px;letter-spacing:.04em}
+button.big.alt,.mbtn.alt{background:#2a1c33;color:#fff;border:1px solid #6b4a5a}
+.mbtn small{display:block;font-weight:600;font-size:10px;opacity:.8;margin-top:2px;letter-spacing:0}
+#lvlList{margin-top:6px}.lvl{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;background:#22152b;color:#fff;border:1px solid #6b4a5a;border-radius:12px;padding:10px 12px;margin-top:6px;font-weight:800;font-size:12px}.lvl.locked{opacity:.4}.lvl small{display:block;font-weight:500;color:#c9b8ad;font-size:10px}
+#story{position:fixed;inset:0;z-index:7;display:none;flex-direction:column;justify-content:flex-end;padding:18px;background:linear-gradient(180deg,#00000066 0%,#00000000 35%,#000000dd 100%)}
+#stBox{max-width:620px;width:100%;margin:0 auto;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+#stText{white-space:pre-line;font-size:clamp(15px,4.2vw,20px);line-height:1.55;min-height:150px;text-shadow:0 2px 8px #000;font-weight:500}
+#stText.red{color:#ff5a4a;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:900;font-size:clamp(20px,6vw,30px);letter-spacing:.06em;animation:blink 1s infinite}
+#stRow{display:flex;gap:10px;align-items:center;margin-top:8px}#stProg{font-size:11px;color:#aaa;flex:1}
+#stNext{background:linear-gradient(100deg,#ff8a52,#ffc08a);color:#240c02;border:0;padding:12px 20px;border-radius:12px;font-weight:900;font-size:14px}#stSkip{background:transparent;color:#bbb;border:1px solid #666;padding:11px 14px;border-radius:12px;font-size:12px}
+#modal{position:fixed;inset:0;z-index:9;background:#050309cc;display:none;align-items:center;justify-content:center;padding:16px}
+.modal{max-width:430px;width:100%;max-height:92vh;overflow:auto;background:#150d1f;border:1px solid var(--line);border-radius:20px;padding:18px;touch-action:pan-y}
+.modal h2{color:var(--or);font-size:17px;margin:0 0 8px;letter-spacing:.03em}.modal p{color:#e5d9d0;line-height:1.5;font-size:13px;margin:6px 0}
+.fact{background:#10283a;border:1px solid #2f6a86;color:#cdeefa;border-radius:12px;padding:9px 11px;font-size:12px;line-height:1.45;margin-top:9px}
+.modal table{width:100%;font-size:12px;border-collapse:collapse;margin:6px 0}.modal td{padding:3px 0;color:#e5d9d0}.modal td:last-child{text-align:right;font-weight:800;color:#8be9ff}
+@media(max-width:370px){#pad{grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px 44px}.ctrl{font-size:16px}#actBtn{width:74px;height:74px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script>
+window.addEventListener('error',function(e){var d=document.getElementById('errBox');if(!d){d=document.createElement('div');d.id='errBox';d.style.cssText='position:fixed;left:6px;right:6px;bottom:6px;z-index:99;background:#7a1010ee;color:#fff;font:11px monospace;padding:8px;border-radius:8px;max-height:30vh;overflow:auto';document.body.appendChild(d)}d.textContent='Error: '+(e.message||'unknown')+' (line '+e.lineno+')'});
+setTimeout(function(){if(!window.__mv){var d=document.createElement('div');d.style.cssText='position:fixed;top:40%;left:10%;right:10%;z-index:99;background:#150d1f;border:1px solid #ff8a52;color:#fff;padding:16px;border-radius:14px;text-align:center;font:14px system-ui';d.textContent='Could not load the 3D engine (Three.js). Check your internet connection and reload.';document.body.appendChild(d)}},7000);
+</script>
+</head>
+<body>
+<div id="game"></div><div id="fxS" class="fx"></div><div id="fxR" class="fx"></div>
+
+<div id="hud" style="display:none">
+ <div id="top">
+  <div class="panel" id="dayBox"><div id="dayLine">SOL 1</div><div id="dayTitle">Mars Landing</div><div id="siteLine"></div></div>
+  <div class="panel" id="stats">SCORE <b id="score">0</b><br><span id="temp"></span><br><span id="rad"></span><br><span id="link" style="color:#ff8a7a">EARTH LINK: NO SIGNAL</span></div>
+ </div>
+ <div class="panel" id="obj"><div id="arrowWrap"><div id="arrow">▲</div><div id="dist"></div></div><div><div id="objLabel"></div><div id="objSub"></div></div></div>
+ <div class="panel" id="bars"></div>
+ <div id="warnB"></div><div id="toastB" class="panel"></div><div id="promptB"></div>
+ <div id="controls">
+  <div id="pad"><div></div><button class="ctrl" data-key="forward">▲</button><div></div><button class="ctrl" data-key="left">◀</button><button class="ctrl" data-key="back">▼</button><button class="ctrl" data-key="right">▶</button><div></div><button class="ctrl" data-key="jump">⤒</button><div></div></div>
+  <div id="actions"><button id="menuBtn">☰ MENU</button><button id="actBtn">ACT</button></div>
+ </div>
+</div>
+
+<div id="start"><div id="startCard">
+ <div class="kicker">JUNIOR ASTRONAUT · MISSION TRAINER</div>
+ <h1>MARSVERSE</h1><div class="tag">THE LAST HUMAN ON EARTH</div>
+ <p>Survive 10 sols on Mars. Build a habitat, find water, grow food and keep your astronaut alive when Earth stops answering.</p>
+ <div class="lbl">LANDING SITE</div><div class="chips" id="siteChips"></div><div class="small" id="siteDesc"></div>
+ <div class="lbl">GRAPHICS</div><div class="chips" id="qChips"></div>
+ <button class="big" id="beginBtn">▶ BEGIN MISSION</button>
+ <button class="big alt" id="lvlBtn">LEVEL SELECT</button>
+ <div id="lvlList" style="display:none"></div>
+ <div class="small" id="saveLine"></div>
+ <div class="small">Needs an internet connection to load Three.js. Independent educational prototype, not an official NASA product.</div>
+</div></div>
+
+<div id="story"><div id="stBox"><div id="stText"></div><div id="stRow"><div id="stProg"></div><button id="stSkip">SKIP</button><button id="stNext">NEXT ▸</button></div></div></div>
+<div id="modal"><div class="modal"><h2 id="mTitle"></h2><div id="mBody"></div><div id="mBtns"></div></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+window.__mv=1;
+const $=id=>document.getElementById(id);
+const {clamp,lerp}=THREE.MathUtils;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const Y=new THREE.Vector3(0,1,0);
+const ui={};['score','temp','rad','link','dayLine','dayTitle','siteLine','objLabel','objSub','arrow','dist','bars','warnB','toastB','promptB','actBtn','menuBtn','start','story','stText','stNext','stSkip','stProg','modal','mTitle','mBody','mBtns','fxS','fxR','hud'].forEach(i=>ui[i]=$(i));
+
+/* ================= SAVE ================= */
+const SAVEKEY='marsverse_save_v1';
+let save={unlocked:1,best:0,tech:[],q:null,site:'jezero'};
+try{Object.assign(save,JSON.parse(localStorage.getItem(SAVEKEY)||'{}'))}catch(e){}
+const persist=()=>{try{localStorage.setItem(SAVEKEY,JSON.stringify(save))}catch(e){}};
+const hasTech=k=>save.tech.includes(k);
+
+/* ================= SITES ================= */
+const SITES={
+ jezero:{name:'Jezero Crater',desc:'Ancient river delta. Balanced sunlight and ice.',seed:1.3,rough:1,col:0x9a4b2f,dark:0x5c2a1c,light:0xc9855a,ice:1,sun:1},
+ utopia:{name:'Utopia Planitia',desc:'Flat northern plains. Lots of ice, weaker sunlight.',seed:4.1,rough:.6,col:0xa8613c,dark:0x6b3a24,light:0xd69a6a,ice:1.35,sun:.85},
+ valles:{name:'Valles Marineris',desc:'Rocky canyon region. Strong sunlight, little ice.',seed:7.7,rough:1.5,col:0x8a3d28,dark:0x4a1f16,light:0xb87050,ice:.7,sun:1.15}
+};
+let siteKey=SITES[save.site]?save.site:'jezero',site=SITES[siteKey];
+const mobile=/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+let quality=save.q!=null?save.q:(mobile?1:2);
+
+/* ================= RENDERER & SCENE ================= */
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('game').appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0xc98c62,.0065);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
+const hemi=new THREE.HemisphereLight(0xffd9b8,0x4a2a1c,1);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0dd,2.6);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;sun.shadow.camera.near=1;sun.shadow.camera.far=240;sun.shadow.bias=-.0004;sun.shadow.normalBias=.35;scene.add(sun,sun.target);
+
+const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
+ uniforms:{top:{value:new THREE.Color()},hor:{value:new THREE.Color()},sunDir:{value:new THREE.Vector3(0,1,0)},glow:{value:new THREE.Color(0xffe0b0)}},
+ vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'varying vec3 vP;uniform vec3 top,hor,sunDir,glow;void main(){vec3 d=normalize(vP);float t=pow(clamp(d.y,0.,1.),.55);vec3 c=mix(hor,top,t);float s=max(dot(d,normalize(sunDir)),0.);c+=glow*(pow(s,6.)*.35+pow(s,180.)*1.6);gl_FragColor=vec4(c,1.);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'});
+const sky=new THREE.Mesh(new THREE.SphereGeometry(500,24,16),skyMat);sky.renderOrder=-1;sky.frustumCulled=false;scene.add(sky);
+
+function starField(n,rad,size,op){const a=new Float32Array(n*3);for(let i=0;i<n;i++){const u=Math.random()*2-1,t=Math.random()*Math.PI*2,r=Math.sqrt(1-u*u);a[i*3]=r*Math.cos(t)*rad;a[i*3+1]=Math.abs(u)*rad;a[i*3+2]=r*Math.sin(t)*rad}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(a,3));return new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size,sizeAttenuation:false,transparent:true,opacity:op,fog:false,depthWrite:false}))}
+const stars=starField(700,480,1.6,0);stars.frustumCulled=false;scene.add(stars);
+
+/* ================= MATERIALS ================= */
+const std=(c,r=.7,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+function canvasTex(w,h,draw,srgb=true){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);if(srgb)t.colorSpace=THREE.SRGBColorSpace;return t}
+const M={
+ suit:std(0xf1f4f7,.65,.05),suit2:std(0xd3dae0,.7,.05),dark:std(0x2b3342,.6,.3),gold:std(0xd9a441,.28,1),metal:std(0xb9c2cb,.38,.85),white:std(0xeceff2,.6,.1),orange:std(0xff7a2a,.55,.1),
+ visor:new THREE.MeshStandardMaterial({color:0xf0b44a,roughness:.06,metalness:1,emissive:0x3a2208,emissiveIntensity:.6}),
+ glowC:new THREE.MeshBasicMaterial({color:0x66e8ff}),glowG:new THREE.MeshBasicMaterial({color:0x5dffa0}),glowO:new THREE.MeshBasicMaterial({color:0xff9a40}),glowR:new THREE.MeshBasicMaterial({color:0xff4a4a}),glowP:new THREE.MeshBasicMaterial({color:0xff7ce8}),
+ panel:new THREE.MeshStandardMaterial({map:canvasTex(128,128,(g,w,h)=>{g.fillStyle='#14306e';g.fillRect(0,0,w,h);g.strokeStyle='#6f9ae8';g.lineWidth=2;for(let i=0;i<=w;i+=32){g.beginPath();g.moveTo(i,0);g.lineTo(i,h);g.moveTo(0,i);g.lineTo(w,i);g.stroke()}}),roughness:.35,metalness:.6}),
+ soil:std(0x4a2d1e,1),glass:new THREE.MeshPhysicalMaterial({color:0xbfe3ee,roughness:.08,metalness:.1,transparent:true,opacity:.26,side:THREE.DoubleSide,depthWrite:false}),
+ ggl:new THREE.MeshPhysicalMaterial({color:0xcaf5e0,roughness:.1,transparent:true,opacity:.28,side:THREE.DoubleSide,depthWrite:false})
+};
+M.panel.map.wrapS=M.panel.map.wrapT=THREE.RepeatWrapping;M.panel.map.repeat.set(3,2);
+import('three/addons/environments/RoomEnvironment.js').then(({RoomEnvironment})=>{const pm=new THREE.PMREMGenerator(renderer);const tex=pm.fromScene(new RoomEnvironment(),.04).texture;[M.gold,M.metal,M.visor,M.suit,M.suit2,M.white,M.dark,M.panel].forEach(m=>{m.envMap=tex;m.envMapIntensity=.7;m.needsUpdate=true})}).catch(()=>{});
+function mesh(parent,geo,mat,pos=[0,0,0],scl,rot){const o=new THREE.Mesh(geo,mat);o.position.set(pos[0],pos[1],pos[2]);if(scl)o.scale.set(scl[0],scl[1],scl[2]);if(rot)o.rotation.set(rot[0],rot[1],rot[2]);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+const noShadow=o=>{o.castShadow=false;o.receiveShadow=false;return o};
+
+/* ================= TERRAIN ================= */
+const grainTex=canvasTex(128,128,(g,w,h)=>{const d=g.createImageData(w,h);for(let i=0;i<d.data.length;i+=4){const v=215+Math.random()*40;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0)});
+grainTex.wrapS=grainTex.wrapT=THREE.RepeatWrapping;grainTex.repeat.set(80,80);
+function H(x,z){const s=site.seed;let h=Math.sin(x*.07+s)*1.7+Math.cos(z*.06+s*2)*1.5+Math.sin((x+z)*.045+s)*1.3+Math.sin(x*.21+z*.17+s)*.5+Math.cos(x*.43-z*.37)*.2;h*=site.rough;
+ const k=THREE.MathUtils.smoothstep(Math.hypot(x,z+12),34,58);const e=Math.min(40,Math.max(0,Math.hypot(x,z)-68));return h*k+e*e*.06}
+let world=new THREE.Group();scene.add(world);const props=new THREE.Group();scene.add(props);const S={solar:[]};
+function makeGround(){
+ const geo=new THREE.PlaneGeometry(270,270,180,180);geo.rotateX(-Math.PI/2);const p=geo.attributes.position,cols=new Float32Array(p.count*3);
+ const base=new THREE.Color(site.col),dark=new THREE.Color(site.dark),light=new THREE.Color(site.light),c=new THREE.Color();
+ for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),h=H(x,z);p.setY(i,h);
+  const n=.5+.5*Math.sin(x*.31+Math.sin(z*.17)*2)*Math.cos(z*.27+site.seed),n2=.5+.5*Math.sin(x*.9+z*.7);
+  c.copy(base).lerp(dark,n*.55).lerp(light,clamp((h-2)/10,0,1)*.6+n2*.12);cols[i*3]=c.r;cols[i*3+1]=c.g;cols[i*3+2]=c.b}
+ geo.setAttribute('color',new THREE.BufferAttribute(cols,3));geo.computeVertexNormals();
+ const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,map:grainTex}));m.receiveShadow=true;return m}
+function scatter(){
+ const rockM=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,flatShading:true});
+ const n=300,im=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),rockM,n),d=new THREE.Object3D(),col=new THREE.Color();
+ for(let i=0;i<n;i++){let x,z,t=0;do{x=rnd(-80,80);z=rnd(-80,80);t++}while(t<20&&(Math.hypot(x,z+10)<9||Math.hypot(x,z)<4.5||Math.hypot(x-21,z+30)<6));
+  const r=.12+Math.pow(Math.random(),3)*1.5;d.position.set(x,H(x,z)+r*.25,z);d.scale.set(r,r*.6,r*.8);d.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);d.updateMatrix();im.setMatrixAt(i,d.matrix);
+  col.setHex(site.col).lerp(new THREE.Color(0x3a2018),Math.random()*.6).offsetHSL(0,0,rnd(-.04,.06));im.setColorAt(i,col)}
+ im.castShadow=true;im.receiveShadow=true;world.add(im);
+ const bm=new THREE.MeshStandardMaterial({color:0x6a3a2c,roughness:1,flatShading:true});
+ for(let i=0;i<22;i++){const a=rnd(0,6.28),rr=rnd(42,78),x=Math.cos(a)*rr,z=Math.sin(a)*rr-10,r=rnd(2,5.5);const o=mesh(world,new THREE.DodecahedronGeometry(r,1),bm,[x,H(x,z)+r*.3,z],[1,.6,.85],[rnd(0,3),rnd(0,3),rnd(0,3)])}
+}
+
+/* ================= STRUCTURES ================= */
+const HAB={x:0,z:-20},POS={scanner:[4.5,3.5],antenna:[10,-8],pad:[0,-11],life:[3.3,-22.2],heater:[3.4,-18],shield:[-3.3,-22.2],lab:[-3.4,-18],store:[0,-24],batt:[-8,-19],
+ solar:[[-13,-12],[-13,-19],[-13,-26]],ghpad:[21,-22.5],gh:[21,-30],ghc:[15.3,-30],melt:[8,-23],pur:[8,-16],
+ crates:[[9,8],[-10,10],[14,-4]],beacons:[[28,16],[-30,14],[6,46]],ore:[[-26,-32],[26,-8],[-30,-6]],tools:[[16,-6],[-18,4]],soil:[30,-40],ice:[[-30,-44],[-48,-28],[-20,-58]]};
+const DOOR_IN=[0,-18];
+const anims=[];
+const easeBack=k=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(k-1,3)+c1*Math.pow(k-1,2)};
+function grow(g,dur=1.8){g.scale.setScalar(.01);anims.push({t:0,dur,g})}
+function consoleUnit(parent,x,z,col){const c=new THREE.Group();c.position.set(x,.35,z);c.rotation.y=Math.atan2(-x,-z);mesh(c,new THREE.BoxGeometry(1.3,1.1,.6),M.dark,[0,.55,0]);
+ noShadow(mesh(c,new THREE.BoxGeometry(1.1,.5,.05),new THREE.MeshBasicMaterial({color:col}),[0,.82,.31],null,[-.35,0,0]));for(let i=0;i<4;i++)noShadow(mesh(c,new THREE.BoxGeometry(.12,.05,.04),M.glowG,[-.4+i*.27,.46,.31]));parent.add(c)}
+function buildHab(anim){
+ const g=new THREE.Group();g.position.set(HAB.x,0,HAB.z);const R=5.2;
+ mesh(g,new THREE.CylinderGeometry(R+.2,R+.4,.35,40),M.dark,[0,.17,0]);
+ const fl=mesh(g,new THREE.CircleGeometry(R,40),std(0x8c95a0,.8,.2),[0,.36,0],null,[-Math.PI/2,0,0]);fl.castShadow=false;
+ const shell=new THREE.Mesh(new THREE.SphereGeometry(R,40,22,Math.PI/2+.34,Math.PI*2-.68,0,Math.PI/2),M.glass);shell.position.y=.35;g.add(shell);
+ for(let i=0;i<8;i++){const b=i*Math.PI/8;if(Math.abs(b-Math.PI/2)<.42)continue;const rib=mesh(g,new THREE.TorusGeometry(R,.07,6,32,Math.PI),M.metal,[0,.35,0],null,[0,b,0]);rib.castShadow=false}
+ mesh(g,new THREE.TorusGeometry(R,.09,6,48),M.metal,[0,.38,0],null,[Math.PI/2,0,0]);
+ for(const s of[-1,1])mesh(g,new THREE.BoxGeometry(.25,3.1,.35),M.metal,[s*1.85,1.9,R-.1]);mesh(g,new THREE.BoxGeometry(4.1,.3,.5),M.metal,[0,3.5,R-.1]);noShadow(mesh(g,new THREE.BoxGeometry(2.2,.08,.1),M.glowG,[0,3.28,R+.2]));
+ const tb=mesh(g,new THREE.CylinderGeometry(.9,.9,.1,16),M.white,[0,.85,0]);mesh(g,new THREE.CylinderGeometry(.12,.12,.5,8),M.metal,[0,.6,0]);for(let i=0;i<3;i++){const a=i*2.1;mesh(g,new THREE.CylinderGeometry(.3,.3,.35,10),M.orange,[Math.cos(a)*1.4,.55,Math.sin(a)*1.4])}
+ const rel=p=>[p[0]-HAB.x,p[1]-HAB.z];consoleUnit(g,...rel(POS.life),0x3aff9a);consoleUnit(g,...rel(POS.heater),0xff9a40);consoleUnit(g,...rel(POS.shield),0xb07cff);consoleUnit(g,...rel(POS.lab),0x4fe0ff);
+ mesh(g,new THREE.BoxGeometry(2.4,1.3,.7),M.metal,[0,.9,-4],null);for(let i=0;i<3;i++)noShadow(mesh(g,new THREE.BoxGeometry(.5,.12,.04),M.glowC,[-.7+i*.7,1.2,-3.64]));
+ const pl=new THREE.PointLight(0xffd7aa,1.3,13);pl.position.set(0,3.2,0);g.add(pl);
+ S.hab=g;world.add(g);if(anim)grow(g,2.6)}
+function buildSolar(i,anim){
+ const g=new THREE.Group(),p=POS.solar[i];g.position.set(p[0],H(p[0],p[1]),p[1]);mesh(g,new THREE.CylinderGeometry(.09,.12,1.5,8),M.metal,[0,.75,0]);
+ const piv=new THREE.Group();piv.position.set(0,1.5,0);piv.rotation.x=-.85;g.add(piv);mesh(piv,new THREE.BoxGeometry(2.8,.08,1.8),M.panel,[0,0,0]);mesh(piv,new THREE.BoxGeometry(2.9,.1,.06),M.metal,[0,0,.9]);
+ g.userData={piv,folded:false};S.solar[i]=g;world.add(g);if(anim)grow(g,1.4)}
+function foldPanel(i,f){const g=S.solar[i];if(g)g.userData.folded=f;F.fold[i]=f?1:0}
+function buildBatt(anim){const g=new THREE.Group();g.position.set(POS.batt[0],0,POS.batt[1]);for(let i=0;i<3;i++){mesh(g,new THREE.BoxGeometry(1.4,1.1,.9),M.metal,[0,.55,(i-1)*1.05]);noShadow(mesh(g,new THREE.BoxGeometry(1.2,.1,.5),M.glowG,[0,1.12,(i-1)*1.05]))}S.batt=g;world.add(g);if(anim)grow(g,1.2)}
+function cropGroup(){const c=new THREE.Group(),l1=std(0x4fae3a,.8),l2=std(0x7bd45a,.8);for(let i=0;i<9;i++){const s=new THREE.Group();s.position.set((i%3-1)*.55,0,(Math.floor(i/3)-1)*.45);mesh(s,new THREE.CylinderGeometry(.03,.04,.5,5),l1,[0,.25,0]);for(let k=0;k<3;k++)mesh(s,new THREE.SphereGeometry(.2,8,6),k%2?l1:l2,[Math.cos(k*2.1)*.15,.5+k*.1,Math.sin(k*2.1)*.15],[1,.35,1]);c.add(s)}return c}
+function buildGH(anim){
+ const g=new THREE.Group();g.position.set(POS.gh[0],H(POS.gh[0],POS.gh[1]),POS.gh[1]);mesh(g,new THREE.BoxGeometry(8.6,.3,5.2),M.dark,[0,.15,0]);
+ const geo=new THREE.CylinderGeometry(2.5,2.5,8.4,28,1,true,0,Math.PI);geo.rotateZ(Math.PI/2);const sh=new THREE.Mesh(geo,M.ggl);sh.position.y=.3;g.add(sh);
+ for(let i=-2;i<=2;i++){const r=mesh(g,new THREE.TorusGeometry(2.5,.05,6,24,Math.PI),M.metal,[i*2.1,.3,0],null,[0,Math.PI/2,0]);r.castShadow=false}
+ const plants=[];for(let i=0;i<3;i++){const x=(i-1)*2.4;mesh(g,new THREE.BoxGeometry(1.9,.35,1.5),M.soil,[x,.45,0]);noShadow(mesh(g,new THREE.BoxGeometry(1.8,.06,.5),M.glowP,[x,2.1,0]));const c=cropGroup();c.position.set(x,.62,0);c.visible=false;g.add(c);plants.push(c)}
+ const pl=new THREE.PointLight(0xff77dd,1.4,9);pl.position.set(0,2,0);g.add(pl);
+ const cx=POS.ghc[0]-POS.gh[0];mesh(g,new THREE.BoxGeometry(.7,1.1,1.1),M.dark,[cx,.7,0]);noShadow(mesh(g,new THREE.BoxGeometry(.05,.5,.8),M.glowG,[cx+.36,.9,0]));
+ g.userData.plants=plants;S.gh=g;world.add(g);if(anim)grow(g,2.2)}
+function updateCrops(){if(!S.gh)return;S.gh.userData.plants.forEach((c,i)=>{c.visible=i<F.seeds;const k=F.harvested&&F.harvested[i]?.15:(.2+.8*F.crop);c.scale.set(.6+.4*k,k,.6+.4*k)})}
+function buildWP(anim){
+ const g=new THREE.Group();g.position.set(9,0,-20);mesh(g,new THREE.BoxGeometry(5,.2,12),M.dark,[0,.1,0]);
+ for(const z of[-1,2])mesh(g,new THREE.CylinderGeometry(1,1,2.6,16),M.white,[2,1.5,z]);
+ mesh(g,new THREE.BoxGeometry(1.6,1.4,1.6),M.metal,[-1,.9,-3]);noShadow(mesh(g,new THREE.BoxGeometry(1.2,.1,1.2),M.glowO,[-1,1.65,-3]));
+ mesh(g,new THREE.CylinderGeometry(.7,.7,1.8,14),M.metal,[-1,1.1,4]);noShadow(mesh(g,new THREE.CylinderGeometry(.5,.5,.1,14),M.glowC,[-1,2.05,4]));
+ mesh(g,new THREE.CylinderGeometry(.12,.12,7,8),M.metal,[.6,.9,.5],null,[Math.PI/2,0,0]);S.wp=g;world.add(g);if(anim)grow(g,1.8)}
+function buildRig(x,z){const g=new THREE.Group();g.position.set(x,H(x,z),z);for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;const l=mesh(g,new THREE.CylinderGeometry(.06,.08,4,6),M.orange,[Math.cos(a)*.9,2,Math.sin(a)*.9]);l.rotation.z=-Math.cos(a)*.22;l.rotation.x=Math.sin(a)*.22}
+ mesh(g,new THREE.BoxGeometry(1.2,.4,1.2),M.dark,[0,3.8,0]);const pipe=mesh(g,new THREE.CylinderGeometry(.14,.14,3.4,8),M.metal,[0,1.8,0]);g.userData.pipe=pipe;
+ noShadow(mesh(g,new THREE.SphereGeometry(.15,8,8),M.glowR,[0,4.1,0]));S.rig=g;world.add(g);grow(g,1.4);return g}
+function buildLander(){const g=new THREE.Group();
+ for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4,x=Math.cos(a),z=Math.sin(a);const leg=mesh(g,new THREE.CylinderGeometry(.07,.09,2.5,8),M.metal,[x*1.4,1.05,z*1.4]);leg.rotation.z=x*.5;leg.rotation.x=-z*.5;mesh(g,new THREE.CylinderGeometry(.5,.55,.12,12),M.dark,[x*1.98,.06,z*1.98])}
+ mesh(g,new THREE.CylinderGeometry(1.5,1.9,1.2,20),M.gold,[0,2.1,0]);mesh(g,new THREE.CylinderGeometry(1.2,1.5,1.8,20),M.white,[0,3.6,0]);mesh(g,new THREE.ConeGeometry(1.2,1.5,20),M.white,[0,5.25,0]);
+ mesh(g,new THREE.SphereGeometry(.32,14,10),M.visor,[0,4.0,1.18],[1,1,.4]);mesh(g,new THREE.BoxGeometry(.9,1.4,.15),M.dark,[0,3.1,1.36]);noShadow(mesh(g,new THREE.BoxGeometry(.7,.08,.05),M.glowG,[0,3.9,1.45]));
+ const fl=new THREE.Mesh(new THREE.ConeGeometry(1.1,4,16),new THREE.MeshBasicMaterial({color:0xffa040,transparent:true,opacity:.75,blending:THREE.AdditiveBlending,depthWrite:false}));fl.rotation.x=Math.PI;fl.position.y=-.4;fl.visible=false;g.add(fl);S.flame=fl;
+ S.lander=g;world.add(g);return g}
+function buildScanner(){const g=new THREE.Group();g.position.set(POS.scanner[0],0,POS.scanner[1]);for(let i=0;i<3;i++){const a=i*2.1;const l=mesh(g,new THREE.CylinderGeometry(.04,.05,1.3,6),M.metal,[Math.cos(a)*.35,.6,Math.sin(a)*.35]);l.rotation.z=Math.cos(a)*.3;l.rotation.x=-Math.sin(a)*.3}
+ mesh(g,new THREE.BoxGeometry(.7,.45,.5),M.dark,[0,1.35,0]);noShadow(mesh(g,new THREE.BoxGeometry(.5,.25,.05),M.glowC,[0,1.37,.26]));mesh(g,new THREE.CylinderGeometry(.03,.03,.7,6),M.metal,[0,1.85,0]);S.scanner=g;world.add(g)}
+function buildAntenna(){const g=new THREE.Group();g.position.set(POS.antenna[0],H(POS.antenna[0],POS.antenna[1]),POS.antenna[1]);mesh(g,new THREE.CylinderGeometry(.08,.14,4.5,8),M.metal,[0,2.25,0]);
+ const dish=mesh(g,new THREE.SphereGeometry(1.2,20,10,0,Math.PI*2,0,Math.PI/2),M.white,[0,4.5,0],null,[-.9,0,0]);dish.material=M.white.clone();dish.material.side=THREE.DoubleSide;
+ S.antLight=noShadow(mesh(g,new THREE.SphereGeometry(.12,8,8),M.glowR,[0,4.9,0]));S.antenna=g;world.add(g)}
+function syncStructures(){if(F.hab&&!S.hab)buildHab(false);for(let i=0;i<F.solar;i++)if(!S.solar[i])buildSolar(i,false);if(F.batt&&!S.batt)buildBatt(false);if(F.wp&&!S.wp)buildWP(false);if(F.gh&&!S.gh)buildGH(false);updateCrops()}
+
+/* props that mark objectives */
+const crateMat=std(0xd9d2c4,.6,.2);
+const crateModel=()=>{const g=new THREE.Group();mesh(g,new THREE.BoxGeometry(1.2,.9,.9),crateMat,[0,.45,0]);mesh(g,new THREE.BoxGeometry(1.22,.18,.92),M.orange,[0,.45,0]);noShadow(mesh(g,new THREE.BoxGeometry(.4,.1,.02),M.glowC,[0,.7,.46]));return g};
+const oreModel=()=>{const g=new THREE.Group(),m=std(0x5a3425,1);for(let i=0;i<5;i++)mesh(g,new THREE.IcosahedronGeometry(rnd(.3,.6),0),i===0?M.metal:m,[rnd(-.6,.6),.3,rnd(-.6,.6)],[1,.7,1]);return g};
+const toolModel=()=>{const g=new THREE.Group();mesh(g,new THREE.BoxGeometry(1.1,.6,.6),M.orange,[0,.3,0]);mesh(g,new THREE.TorusGeometry(.25,.04,6,12,Math.PI),M.dark,[0,.65,0]);return g};
+const stakeModel=()=>{const g=new THREE.Group();mesh(g,new THREE.CylinderGeometry(.04,.04,1.8,6),M.metal,[0,.9,0]);noShadow(mesh(g,new THREE.BoxGeometry(.5,.3,.03),M.glowO,[.28,1.6,0]));return g};
+const soilModel=()=>{const g=new THREE.Group();mesh(g,new THREE.CylinderGeometry(1.2,1.4,.12,14),std(0x2a1a14,1),[0,.06,0]);g.add(stakeModel());return g};
+const padModel=()=>{const g=new THREE.Group();mesh(g,new THREE.BoxGeometry(2.6,.1,2.6),M.dark,[0,.05,0]);noShadow(mesh(g,new THREE.BoxGeometry(2.7,.04,.12),M.glowO,[0,.11,1.3]));noShadow(mesh(g,new THREE.BoxGeometry(2.7,.04,.12),M.glowO,[0,.11,-1.3]));return g};
+const patchModel=(x,z)=>{const a=Math.atan2(x-HAB.x,z-HAB.z),g=new THREE.Group();const m=noShadow(mesh(g,new THREE.BoxGeometry(1.3,1,.12),M.glowO,[-Math.sin(a)*2.05,2.1,-Math.cos(a)*2.05]));m.rotation.y=a;return g};
+
+/* markers */
+const markers=[];for(let i=0;i<4;i++){const g=new THREE.Group(),bm=new THREE.MeshBasicMaterial({color:0x66e8ff,transparent:true,opacity:.28,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+ const beam=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,18,16,1,true),bm);beam.position.y=9;const rm=new THREE.MeshBasicMaterial({color:0xaef6ff,fog:false});const ring=new THREE.Mesh(new THREE.TorusGeometry(1.3,.07,8,32),rm);ring.rotation.x=Math.PI/2;ring.position.y=.15;
+ g.add(beam,ring);g.visible=false;scene.add(g);markers.push({g,beam,ring,bm,rm})}
+
+/* ================= ASTRONAUT ================= */
+const astro=new THREE.Group();scene.add(astro);const A={};
+function limb(x,y,len,r,mat,endMat){const piv=new THREE.Group();piv.position.set(x,y,0);astro.add(piv);mesh(piv,new THREE.CapsuleGeometry(r,len,4,10),mat,[0,-len/2-r*.3,0]);mesh(piv,new THREE.SphereGeometry(r*1.2,10,8),endMat,[0,-len-r*.6,0]);return piv}
+(function(){
+ mesh(astro,new THREE.CapsuleGeometry(.36,.5,6,14),M.suit,[0,1.22,0]);mesh(astro,new THREE.CylinderGeometry(.37,.37,.1,16),M.metal,[0,.88,0]);
+ const head=new THREE.Group();head.position.set(0,1.98,0);astro.add(head);mesh(head,new THREE.SphereGeometry(.4,24,18),M.suit,[0,0,0]);mesh(head,new THREE.SphereGeometry(.31,24,18),M.visor,[0,.01,.15],[1,.82,.7]);mesh(head,new THREE.TorusGeometry(.34,.04,8,24),M.metal,[0,-.32,0],null,[Math.PI/2,0,0]);
+ mesh(astro,new THREE.BoxGeometry(.62,.82,.3),M.suit2,[0,1.25,-.38]);mesh(astro,new THREE.CylinderGeometry(.03,.03,.5,6),M.metal,[.2,1.9,-.4]);mesh(astro,new THREE.BoxGeometry(.3,.2,.08),M.dark,[0,1.35,.34]);
+ noShadow(mesh(astro,new THREE.BoxGeometry(.06,.06,.03),M.glowG,[-.08,1.36,.39]));noShadow(mesh(astro,new THREE.BoxGeometry(.06,.06,.03),M.glowR,[.08,1.36,.39]));
+ mesh(astro,new THREE.BoxGeometry(.3,.12,.04),M.orange,[0,1.1,.36]);
+ A.armL=limb(-.5,1.55,.5,.13,M.suit,M.dark);A.armR=limb(.5,1.55,.5,.13,M.suit,M.dark);A.legL=limb(-.2,.85,.5,.17,M.suit,M.dark);A.legR=limb(.2,.85,.5,.17,M.suit,M.dark);
+ const ic=mesh(astro,new THREE.BoxGeometry(.5,.5,.5),new THREE.MeshStandardMaterial({color:0x9fefff,transparent:true,opacity:.7,roughness:.1}),[0,2.9,0]);ic.visible=false;S.carry=ic})();
+const P=astro.position;
+
+/* ================= LIGHT / SKY ================= */
+const C={dayTop:new THREE.Color(0x9c7a62),duskTop:new THREE.Color(0x1c1a3a),dayHor:new THREE.Color(0xe0b48a),duskHor:new THREE.Color(0xf29a62),storm:new THREE.Color(0xa86a3f),sunDay:new THREE.Color(0xfff0dd),sunLow:new THREE.Color(0xff9a5a),glowDay:new THREE.Color(0xffe0b0),glowLow:new THREE.Color(0x7fb2ff)};
+const sunDir=new THREE.Vector3();let tod=7,storm=0,stormTarget=0;
+const sunE=()=>Math.max(.1,Math.sin((Math.min(tod,17.6)-6)/12*Math.PI));
+function updateLight(dt,T){
+ const a=(Math.min(tod,17.6)-6)/12*Math.PI,e=sunE(),t=clamp((e-.1)/.7,0,1);storm+=(stormTarget-storm)*Math.min(1,dt*.7);
+ sunDir.set(-Math.cos(a)*.9,e,-.35).normalize();
+ skyMat.uniforms.top.value.copy(C.duskTop).lerp(C.dayTop,t).lerp(C.storm,storm*.85);skyMat.uniforms.hor.value.copy(C.duskHor).lerp(C.dayHor,t).lerp(C.storm,storm*.9);
+ skyMat.uniforms.sunDir.value.copy(sunDir);skyMat.uniforms.glow.value.copy(C.glowLow).lerp(C.glowDay,t).multiplyScalar(1-storm*.8);
+ scene.fog.color.copy(skyMat.uniforms.hor.value);scene.fog.density=lerp(.0065,.034,storm);
+ sun.intensity=lerp(1.1,2.8,t)*(1-storm*.65);sun.color.copy(C.sunLow).lerp(C.sunDay,t);hemi.intensity=lerp(.5,1,t)*(1-storm*.25);
+ stars.material.opacity=clamp((.5-t)*1.4,0,.8)*(1-storm);
+ sun.position.set(P.x+sunDir.x*90,P.y+sunDir.y*90,P.z+sunDir.z*90);sun.target.position.copy(P);
+ ui.fxS.style.opacity=(storm*.6).toFixed(2);
+ ui.fxR.style.opacity=radAlert?(.28+.2*Math.sin(T*6)).toFixed(2):0}
+
+/* dust + landing puff */
+const DMAX=520;let dustN=260;const dustGeo=new THREE.BufferGeometry(),dp=new Float32Array(DMAX*3);for(let i=0;i<DMAX;i++){dp[i*3]=rnd(-30,30);dp[i*3+1]=rnd(0,9);dp[i*3+2]=rnd(-30,30)}
+dustGeo.setAttribute('position',new THREE.BufferAttribute(dp,3));const dustMat=new THREE.PointsMaterial({color:0xe2b48a,size:.14,transparent:true,opacity:.5,depthWrite:false});const dust=new THREE.Points(dustGeo,dustMat);dust.frustumCulled=false;scene.add(dust);
+function updateDust(dt,T){const n=Math.floor(dustN*(.5+.5*storm)),w=1.2+storm*15;dustGeo.setDrawRange(0,n);const a=dustGeo.attributes.position.array;
+ for(let i=0;i<n;i++){const k=i*3;a[k]+=w*dt*(1+(i%7)*.06);a[k+1]+=Math.sin(T*.8+i)*.25*dt;a[k+2]+=w*.3*dt*Math.sin(i);if(a[k]>30)a[k]-=60;if(a[k+2]>30)a[k+2]-=60;if(a[k+2]<-30)a[k+2]+=60;if(a[k+1]>9||a[k+1]<0)a[k+1]=rnd(.2,8)}
+ dustGeo.attributes.position.needsUpdate=true;dust.position.set(P.x,P.y,P.z);dustMat.opacity=.35+storm*.4;dustMat.size=.12+storm*.2}
+let burst=null;
+function puff(){if(burst){scene.remove(burst.pts)}const n=160,pos=new Float32Array(n*3),vel=[];for(let i=0;i<n;i++){pos[i*3]=0;pos[i*3+1]=.3;pos[i*3+2]=0;const a=rnd(0,6.28),s=rnd(3,10);vel.push([Math.cos(a)*s,rnd(.5,2.5),Math.sin(a)*s])}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));const m=new THREE.PointsMaterial({color:0xe0b090,size:.6,transparent:true,opacity:.9,depthWrite:false});const pts=new THREE.Points(g,m);pts.frustumCulled=false;scene.add(pts);burst={pts,vel,t:0}}
+function updateBurst(dt){if(!burst)return;burst.t+=dt;const a=burst.pts.geometry.attributes.position.array;for(let i=0;i<burst.vel.length;i++){const v=burst.vel[i];a[i*3]+=v[0]*dt;a[i*3+1]+=v[1]*dt;a[i*3+2]+=v[2]*dt;v[0]*=.97;v[2]*=.97;v[1]-=1.2*dt;if(a[i*3+1]<.1)a[i*3+1]=.1}
+ burst.pts.geometry.attributes.position.needsUpdate=true;burst.pts.material.opacity=Math.max(0,.9-burst.t/3.2);if(burst.t>3.3){scene.remove(burst.pts);burst=null}}
+
+/* ================= INTRO SCENE ================= */
+const introScene=new THREE.Scene(),introCam=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,2000);
+introScene.add(new THREE.AmbientLight(0x404a66,1));const iSun=new THREE.DirectionalLight(0xfff2e0,3.2);iSun.position.set(60,30,40);introScene.add(iSun);introScene.add(starField(1800,900,1.8,1));
+const earthTex=canvasTex(512,256,(g,w,h)=>{g.fillStyle='#1b4f9c';g.fillRect(0,0,w,h);for(let i=0;i<70;i++){g.fillStyle='hsl('+(95+Math.random()*30)+',45%,'+(28+Math.random()*14)+'%)';g.beginPath();g.ellipse(Math.random()*w,h*.15+Math.random()*h*.7,8+Math.random()*34,5+Math.random()*20,Math.random()*3,0,7);g.fill()}for(let i=0;i<60;i++){g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.ellipse(Math.random()*w,Math.random()*h,15+Math.random()*40,3+Math.random()*7,Math.random()*3,0,7);g.fill()}});
+const marsTex=canvasTex(512,256,(g,w,h)=>{g.fillStyle='#b4572f';g.fillRect(0,0,w,h);for(let i=0;i<140;i++){g.fillStyle='rgba('+(60+Math.random()*60|0)+','+(25+Math.random()*25|0)+','+(15+Math.random()*15|0)+','+(.15+Math.random()*.25)+')';g.beginPath();g.ellipse(Math.random()*w,Math.random()*h,10+Math.random()*50,5+Math.random()*22,Math.random()*3,0,7);g.fill()}g.fillStyle='rgba(255,255,255,.7)';g.fillRect(0,0,w,7);g.fillRect(0,h-7,w,7)});
+const earth=new THREE.Mesh(new THREE.SphereGeometry(10,48,32),new THREE.MeshStandardMaterial({map:earthTex,roughness:.9,emissive:0x0a2a66,emissiveIntensity:.5}));earth.position.set(-42,8,-16);introScene.add(earth);
+const marsP=new THREE.Mesh(new THREE.SphereGeometry(14,48,32),new THREE.MeshStandardMaterial({map:marsTex,roughness:1}));marsP.position.set(50,-4,-42);introScene.add(marsP);
+const ship=new THREE.Group();introScene.add(ship);let shipGlow,shipBeacon;
+(function(){const mb=(g,m,p,r)=>{const o=new THREE.Mesh(g,m);o.position.set(p[0],p[1],p[2]);if(r)o.rotation.set(r[0],r[1],r[2]);ship.add(o);return o};
+ mb(new THREE.CylinderGeometry(1.3,1.3,7,24),M.white,[0,0,0],[0,0,Math.PI/2]);mb(new THREE.ConeGeometry(1.3,2.6,24),M.white,[4.8,0,0],[0,0,-Math.PI/2]);mb(new THREE.CylinderGeometry(1.34,1.34,2,24),M.gold,[-2,0,0],[0,0,Math.PI/2]);mb(new THREE.CylinderGeometry(.9,1.2,.9,16),M.dark,[-4,0,0],[0,0,Math.PI/2]);
+ for(const s of[-1,1]){mb(new THREE.BoxGeometry(.12,.12,2),M.metal,[0,0,s*2.2]);mb(new THREE.BoxGeometry(3,.08,3.2),M.panel,[0,0,s*4.6])}
+ shipGlow=mb(new THREE.ConeGeometry(.8,3,16),new THREE.MeshBasicMaterial({color:0x66b8ff,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false}),[-5.8,0,0],[0,0,Math.PI/2]);
+ shipBeacon=mb(new THREE.SphereGeometry(.2,10,8),M.glowR,[1,1.4,0]);shipBeacon.visible=false})();
+let storyPage=-1,earthDim=0,lookX=-3;
+function updateIntro(dt,T){ship.position.y=Math.sin(T*.6)*.25;ship.rotation.x=Math.sin(T*.4)*.04;const lost=storyPage>=3?1:0;earthDim+=(lost-earthDim)*Math.min(1,dt*.8);
+ earth.material.emissiveIntensity=.5*(1-earthDim)*(storyPage>=3&&Math.random()<.12?.2:1);earth.material.color.setScalar(1-earthDim*.75);earth.rotation.y+=dt*.03;marsP.rotation.y+=dt*.02;
+ shipGlow.scale.set(1,1+Math.sin(T*30)*.1,1);shipBeacon.visible=storyPage>=3&&Math.floor(T*2)%2===0;
+ lookX+=((storyPage>=4?10:-4)-lookX)*Math.min(1,dt*.6);introCam.position.set(lookX*.3,2.5+Math.sin(T*.2)*.6,24);introCam.lookAt(lookX,0,0)}
+
+/* ================= STATE ================= */
+let mode='menu',day=1,score=0,steps=[],stepI=0,curStep=null,waitLeft=0,F=null,paused=false,cine=null,snapshot=null,failed=false,lastCause='',iceBest=0,iceSig=[0,0,0];
+let radAlert=false,coldSnap=false,carrying=false,yaw=0,pitch=.35,vy=0,onGround=true,walkT=0,walkAmp=0,evT=70,hudT=0,uiBars={};
+const R={o2:70,h2o:75,food:75,pwr:80,hp:100};
+const keys={forward:false,back:false,left:false,right:false,jump:false};
+const structuresFor=d=>({hab:d>3?1:0,life:d>3?1:0,solar:d>4?3:0,batt:d>4?1:0,wp:d>=5?1:0,gh:d>6?1:0,seeds:d>6?3:0,crop:d>6?Math.min(1,(d-6)*.2):0,cq:1,fold:[0,0,0],heat:0,shield:0,harvested:[0,0,0]});
+const TECH=[{k:'rec',name:'Water Recycler',icon:'💧',desc:'Recycles cabin water. Water use −50%.'},{k:'gh',name:'Improved Greenhouse',icon:'🌱',desc:'LED + CO₂ control. Crops grow faster and give +30% food.'},{k:'o2',name:'Oxygen Generator',icon:'🫧',desc:'MOXIE-style oxygen from CO₂. Suit O₂ use −20%, faster indoor refills.'},{k:'rad',name:'Radiation Shield',icon:'🛡️',desc:'Water-wall shielding. Radiation damage −75%.'}];
+const LEVELS=['Welcome to Mars','Building the Mars Base','Discovering Martian Resources','Survive the Dangers','Mission Complete'];
+const BARS=[['o2','O₂','#59e3ff'],['h2o','H₂O','#5a9bff'],['food','FOOD','#7bdc6a'],['pwr','PWR','#ffd04a'],['hp','HP','#ff6b7a']];
+BARS.forEach(([k,l,c])=>{const d=document.createElement('div');d.className='bar';d.innerHTML='<span>'+l+'</span><i><b style="background:'+c+'"></b></i>';ui.bars.appendChild(d);uiBars[k]={el:d,b:d.querySelector('b')}});
+
+/* ================= AUDIO ================= */
+let ac;function beep(f=520,d=.1,type='sine',v=.05){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);o.stop(ac.currentTime+d)}catch(e){}}
+
+/* ================= UI HELPERS ================= */
+let toastTimer;function toast(t,ms=2800){ui.toastB.textContent=t;ui.toastB.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>ui.toastB.style.display='none',ms)}
+function addScore(n){score+=n;ui.score.textContent=score}
+function addRes(k,v){R[k]=clamp(R[k]+v,0,100)}
+function dmg(n,cause){R.hp=clamp(R.hp-n,0,100);lastCause=cause}
+const MQ=[];let modalOpen=false;
+function modal(o){MQ.push(o);if(!modalOpen)nextModal()}
+function nextModal(){const o=MQ.shift();if(!o){modalOpen=false;ui.modal.style.display='none';return}
+ modalOpen=true;keysOff();ui.mTitle.innerHTML=o.title;ui.mBody.innerHTML=o.body||'';ui.mBtns.innerHTML='';
+ (o.choices||[{label:o.btn||'CONTINUE ▸'}]).forEach(c=>{const b=document.createElement('button');b.className='mbtn'+(c.alt?' alt':'');b.innerHTML=c.label+(c.sub?'<small>'+c.sub+'</small>':'');
+  b.onclick=()=>{beep(440,.07);if(c.fx)c.fx();if(c.res)modal({title:c.good?'✅ GOOD DECISION':'⚠️ CONSEQUENCE',body:'<p>'+c.res+'</p>'});if(o.after)o.after();nextModal()};ui.mBtns.appendChild(b)});
+ ui.modal.style.display='flex'}
+function keysOff(){for(const k in keys)keys[k]=false;document.querySelectorAll('.ctrl.active').forEach(b=>b.classList.remove('active'))}
+const fact=t=>'<div class="fact">💡 '+t+'</div>';
+const info=(title,body,after)=>modal({title,body,after});
+
+/* ================= MISSION DATA ================= */
+const tg=arr=>arr.map((p,i)=>({x:p[0],z:p[1],i,done:false}));
+const isInside=()=>!!(F&&F.hab&&S.hab&&S.hab.scale.x>.9&&Math.hypot(P.x-HAB.x,P.z-HAB.z)<4.7);
+const polar=(a,r)=>[HAB.x+Math.sin(a)*r,HAB.z+Math.cos(a)*r];
+async function donkiLine(){try{const e=new Date(),s=new Date(e-30*864e5),f=d=>d.toISOString().slice(0,10);const r=await fetch('https://api.nasa.gov/DONKI/FLR?startDate='+f(s)+'&endDate='+f(e)+'&api_key=DEMO_KEY');if(!r.ok)throw 0;const j=await r.json();if(!j.length)return 'Live from NASA DONKI: no solar flares reported in the last 30 days.';j.sort((a,b)=>a.beginTime<b.beginTime?1:-1);const l=j[0];return 'Live from NASA DONKI: the latest solar flare'+(l.classType?' (class '+l.classType+')':'')+' began '+String(l.beginTime).replace('T',' ').replace('Z',' UTC')+'.'}catch(e){return 'NASA DONKI live data is unavailable offline. Real solar flares and storms are tracked every day at NASA.'}}
+const CRATE=[['🫁 Oxygen canister','o2',22,'O₂'],['💧 Water pouches','h2o',22,'H₂O'],['🍱 Food packs','food',22,'FOOD']];
+
+const DAYS=[
+{lvl:1,title:'Mars Landing',brief:'Your capsule survived the descent. Step outside, collect the emergency supply crates and scan the air around you.',fact:'Mars has about 95% carbon dioxide in its air and under 1% of Earth’s air pressure. Without a pressurised suit and oxygen, a human could not survive.',
+ steps:()=>[
+ {label:'Collect the 3 emergency supply crates',targets:tg(POS.crates),model:crateModel,prompt:'Collect crate',onAct:i=>{const c=CRATE[i];addRes(c[1],c[2]);toast(c[0]+' · +'+c[2]+' '+c[3])}},
+ {label:'Scan the atmosphere with the field scanner',targets:tg([POS.scanner]),prompt:'Scan the air',score:20,onAct:()=>info('🔬 ATMOSPHERE SCAN','<table><tr><td>Carbon dioxide (CO₂)</td><td>95.3%</td></tr><tr><td>Nitrogen (N₂)</td><td>2.7%</td></tr><tr><td>Argon (Ar)</td><td>1.6%</td></tr><tr><td>Oxygen (O₂)</td><td>0.13%</td></tr><tr><td>Pressure</td><td>~0.6% of Earth</td></tr></table><p>You cannot breathe this air. Your suit and habitat must supply oxygen and pressure.</p>'+fact('Earth’s air is about 21% oxygen. Mars has almost none, so astronauts must make or carry their own.'))}]},
+{lvl:1,title:'First Steps',brief:'Explore the surface in your spacesuit. Feel the low gravity and the cold. Visit the three survey beacons.',fact:'Mars gravity is only about 38% of Earth’s, so you can jump almost three times higher.',
+ steps:()=>[
+ {label:'Walk to the 3 survey beacons',targets:tg(POS.beacons),auto:true,score:15,onAct:i=>{addRes('pwr',-2);if(i===0)info('🦘 LOW GRAVITY','<p>Mars gravity is about <b>38%</b> of Earth’s. Press <b>⤒</b> to hop, but landing in a suit still takes care.</p>'+fact('A person who jumps 0.5 m on Earth could jump over 1.3 m on Mars.'));else if(i===1)info('🥶 EXTREME COLD','<p>Average surface temperature is around <b>−60 °C</b>. Your suit heaters keep you warm, but they use power.</p>');else info('🧑‍🚀 SPACESUIT','<p>Your suit supplies oxygen, keeps pressure around your body, heats you and shields you from dust. Moving in it is tiring.</p>')}},
+ {label:'Return to the scanner and run a suit check',targets:tg([POS.scanner]),prompt:'Run suit check',score:20,onAct:()=>info('✅ SUIT CHECK','<table><tr><td>Suit pressure</td><td>OK</td></tr><tr><td>Heaters</td><td>OK</td></tr><tr><td>Oxygen</td><td>'+Math.round(R.o2)+'%</td></tr></table><p>Good work, cadet. Tomorrow you build a home.</p>')}]},
+{lvl:2,title:'Build a Habitat',brief:'Collect building material, build a pressurised habitat and install life support.',fact:'A habitat protects from cold, low pressure and radiation. Mars has no global magnetic field and a thin atmosphere, so thick walls matter.',
+ steps:()=>[
+ {label:'Collect 3 piles of regolith (building material)',targets:tg(POS.ore),model:oreModel,prompt:'Collect regolith',onAct:()=>toast('⛏ Regolith collected')},
+ {label:'Start the construction kit',targets:tg([POS.pad]),model:padModel,prompt:'Build habitat',keep:true,score:25,onAct:()=>{F.hab=1;buildHab(true);toast('🏗 Habitat is inflating…')}},
+ {label:'Enter the habitat and install life support',targets:tg([POS.life]),prompt:'Install life support',score:30,onAct:()=>{F.life=1;info('🫁 LIFE SUPPORT ONLINE','<p>The habitat now holds breathable air at safe pressure. Stand inside to refill your oxygen and slowly heal.</p>'+fact('Surface radiation on Mars is about 0.6 millisieverts per day, measured by NASA’s Curiosity rover. Shelter helps.'))}}]},
+{lvl:2,title:'Power Up',brief:'Set up solar panels and a battery bank to power the base.',fact:'Mars gets only about 43% of the sunlight Earth does, and dust storms can block even more.',
+ steps:()=>[
+ {label:'Deploy 3 solar panels',targets:tg(POS.solar),model:padModel,prompt:'Deploy panel',onAct:i=>{F.solar++;buildSolar(i,true);toast('☀ Solar panel deployed')}},
+ {label:'Connect the battery bank',targets:tg([POS.batt]),prompt:'Connect battery',score:30,onAct:()=>{F.batt=1;buildBatt(true);info('⚡ POWER ONLINE','<p>Solar panels charge the batteries during the day. Power use stays steady, so storing energy is how you survive dark or dusty times.</p>'+fact('In 2018 a planet-wide dust storm blocked so much sunlight that NASA’s solar-powered Opportunity rover went silent.'))}}]},
+{lvl:3,title:'Search for Water',brief:'Survey three sites with ground-penetrating radar. Drill where the signal is strongest, then melt and purify the ice.',fact:'Water ice hides under the surface at many places on Mars, and it is the most valuable resource for fuel, air and drinking water.',
+ steps:()=>{iceBest=Math.floor(Math.random()*3);iceSig=[0,1,2].map(i=>i===iceBest?Math.round(rnd(82,96)):Math.round(rnd(6,32)));const ip=POS.ice[iceBest];return[
+ {label:'Radar-survey the 3 marked sites for ice',targets:tg(POS.ice),model:stakeModel,keep:true,prompt:'Radar scan',onAct:i=>toast('📡 Ice signal: '+iceSig[i]+'%'),onEnd:()=>toast('📍 Strongest signal found. Go drill there!')},
+ {label:'Drill at the strongest ice signal',targets:tg([ip]),prompt:'Start drilling',score:25,onAct:()=>{buildRig(ip[0],ip[1]);toast('⛏ Drilling…')}},
+ {label:'Extract the ice',targets:tg([ip]),prompt:'Extract ice',score:25,onAct:()=>{carrying=true;S.carry.visible=true;info('❄ ICE FOUND!','<p>You cut a block of clean-looking ice. Carry it to the water plant next to the habitat.</p>'+fact('Mars has water ice at the poles and buried at mid-latitudes. Future crews could mine it instead of carrying water from Earth.'))}},
+ {label:'Carry the ice to the melter',targets:tg([POS.melt]),prompt:'Melt the ice',onAct:()=>{carrying=false;S.carry.visible=false;toast('🔥 Ice is melting…')}},
+ {label:'Purify the water',targets:tg([POS.pur]),prompt:'Purify water',score:30,onAct:()=>{const w=Math.round(45*site.ice);addRes('h2o',w);info('💧 WATER READY','<p>Purifier complete: <b>+'+w+' H₂O</b>.</p>'+fact('Martian ice carries dust and salts, such as perchlorates, so water must be filtered and tested before anyone drinks it.'))}}]}},
+{lvl:3,title:'Grow Your Own Food',brief:'Build a greenhouse, plant seeds and set up water, light and temperature for your crops.',fact:'Plants need light, warmth, water, nutrients, pressure and CO₂. Mars has lots of CO₂, but the air is far too thin and cold.',
+ steps:()=>[
+ {label:'Build the greenhouse',targets:tg([POS.ghpad]),model:padModel,prompt:'Build greenhouse',keep:true,score:25,onAct:()=>{F.gh=1;buildGH(true);toast('🌿 Greenhouse is going up…')}},
+ {label:'Plant seeds in all 3 trays',targets:tg([0,1,2].map(i=>[POS.gh[0]+(i-1)*2.4,POS.gh[1]+2.2])),prompt:'Plant seeds',onAct:i=>{F.seeds++;updateCrops();toast('🌱 Seeds planted')}},
+ {label:'Set up water, light and temperature',targets:tg([POS.ghc]),prompt:'Open controls',score:20,onAct:()=>{
+  modal({title:'💧 GREENHOUSE WATER',body:'<p>How do you water the seedlings?</p>',choices:[
+   {label:'Drip irrigation, measured dose',sub:'recommended',fx:()=>{addRes('h2o',-4);addScore(25)},res:'Efficient! Drip irrigation delivers water right to the roots with little waste.',good:1},
+   {label:'Flood the trays',fx:()=>{addRes('h2o',-18);F.cq=Math.min(F.cq,.8)},res:'Too much water was wasted: −18 H₂O. Water is precious on Mars.'},
+   {label:'Skip watering to save water',fx:()=>{F.cq=Math.min(F.cq,.5)},res:'The seedlings struggle. Harvest will be much smaller.'}]});
+  modal({title:'💡 LIGHT & TEMPERATURE',body:'<p>Pick the greenhouse lighting and heat.</p>',choices:[
+   {label:'LED grow lights at 22 °C',sub:'recommended',fx:()=>{addRes('pwr',-5);addScore(25)},res:'LEDs use only the colours plants need. Warm, steady and efficient.',good:1},
+   {label:'Sunlight only',fx:()=>{F.cq=Math.min(F.cq,.7)},res:'Mars gets about 43% of Earth’s sunlight and dust dims it further. Crops grow slowly.'},
+   {label:'Max heater at 35 °C',fx:()=>{addRes('pwr',-15)},res:'The heater drained −15 PWR for little benefit.'}]})}}]},
+{lvl:4,title:'Dust Storm Emergency',brief:'A giant dust storm is approaching! Secure equipment, fold the solar panels, store power and get inside.',fact:'Martian dust storms can grow to cover the whole planet and last for weeks.',
+ steps:()=>[
+ {label:'Secure the outdoor equipment',targets:tg(POS.tools),model:toolModel,prompt:'Secure tool box',danger:1,onStart:()=>{stormTarget=.5;toast('🌪 STORM WARNING: hurry!')},onAct:()=>toast('🧰 Equipment secured')},
+ {label:'Fold the 3 solar panels',targets:tg(POS.solar),prompt:'Fold panel',danger:1,onAct:i=>{foldPanel(i,true);toast('Panel folded')}},
+ {label:'Charge the battery and switch to battery power',targets:tg([POS.batt]),prompt:'Switch power',danger:1,score:25,onStart:()=>{stormTarget=.8},onAct:()=>{addRes('pwr',30);info('🔋 BATTERY MODE','<p>With panels folded, the base now runs on stored energy. Storing power before a storm is vital.</p>')}},
+ {label:'Get inside the habitat!',mark:[DOOR_IN],cond:isInside,danger:1,onStart:()=>{stormTarget=1},hint:'Walk through the door'},
+ {label:'Wait out the storm',wait:25,danger:1,onEnd:()=>{stormTarget=0;for(let i=0;i<3;i++)foldPanel(i,false);addScore(40);info('🌤 STORM PASSES','<p>The sky clears and the panels unfold. You stayed safe and kept your power.</p>'+fact('Mars dust is very fine and sticks to everything, so it is a risk for suits, machines and lungs.'))}}]},
+{lvl:4,title:'Extreme Climate & Radiation',brief:'Temperatures plunge and a radiation alert sounds. Repair the insulation, boost the heater and shelter.',fact:'Night temperatures at some Martian sites can fall below −100 °C. Water and regolith walls are good radiation shields.',
+ steps:()=>{const PA=[polar(4.2,7.2),polar(2.2,7.2)];return[
+ {label:'Repair the 2 cracked insulation patches',targets:tg(PA),model:patchModel,prompt:'Seal insulation',onAct:()=>toast('🩹 Insulation sealed')},
+ {label:'Boost the habitat heater',targets:tg([POS.heater]),prompt:'Boost heater',onAct:()=>{F.heat=1;addRes('pwr',-6);toast('🔥 Heater boosted · −6 PWR')}},
+ {label:'☢ RADIATION ALERT: close the shield shutters!',targets:tg([POS.shield]),prompt:'Close shutters',danger:1,score:25,onStart:()=>{radAlert=true;toast('☢ RADIATION ALERT!')},onAct:()=>{F.shield=1;info('☢ SHIELDS CLOSED','<p>You are in the shielded storm shelter. Stay inside until levels drop.</p><div class="fact">🛰 <span id="donkiLine">Contacting NASA DONKI…</span></div>'+fact('Solar flares and coronal mass ejections can raise radiation. NASA’s DONKI database logs them as they happen.'));donkiLine().then(t=>{const e=document.getElementById('donkiLine');if(e)e.textContent=t})}},
+ {label:'Shelter until the radiation passes',wait:14,danger:1,onEnd:()=>{radAlert=false;F.shield=0;toast('✅ Radiation levels normal')}},
+ {label:'Collect a soil sample (be careful!)',targets:tg([POS.soil]),model:soilModel,prompt:'Collect soil',onAct:()=>modal({title:'☣ TOXIC SOIL ALERT',body:'<p>The sample is rich in <b>perchlorates</b>, toxic salts common in Martian soil. How do you handle it?</p>',choices:[
+   {label:'Seal sample, wear filter mask, clean boots',sub:'safe protocol',fx:()=>{addScore(40);addRes('o2',-3)},res:'Correct! Perchlorates can harm the thyroid. Keeping dust outside the habitat is a real concern for Mars crews.',good:1},
+   {label:'Just wipe the sample bag',fx:()=>{dmg(10,'toxic dust contamination');addScore(5)},res:'Dust followed you inside. You feel sick: −10 HP.'},
+   {label:'Skip the sample and leave it',fx:()=>addScore(10),res:'Safe, but the science team loses a valuable sample.'}]})},
+ {label:'Return to the habitat',mark:[DOOR_IN],cond:isInside,hint:'Walk through the door'}]}},
+{lvl:5,title:'Resources & Communication',brief:'Earth still does not answer. Manage supplies, handle an equipment failure and make decisions on your own.',fact:'Radio signals between Earth and Mars take between about 3 and 22 minutes one way, so Mars crews must be able to decide for themselves.',
+ steps:()=>[
+ {label:'Try to contact Earth at the comms antenna',targets:tg([POS.antenna]),prompt:'Transmit',score:20,onAct:()=>info('📡 NO REPLY','<p>You send a status report and wait. Nothing. Even when Earth is healthy, a reply would need <b>3 to 22 minutes</b> each way.</p><p>From now on, <b>you</b> are Mission Control.</p>'+fact('The ability to make decisions without help from Earth is called autonomy, and it is vital for deep-space missions.'))},
+ {label:'Investigate the life-support alarm',targets:tg([POS.life]),prompt:'Inspect panel',danger:1,onStart:()=>toast('🚨 ALARM: oxygen generator fault!'),onAct:()=>modal({title:'🚨 EQUIPMENT FAILURE',body:'<p>The oxygen generator has failed. What is your decision?</p>',choices:[
+   {label:'Repair it with spare parts',sub:'uses power',fx:()=>{addRes('pwr',-12);addScore(40)},res:'Repair successful: −12 PWR. Knowing your systems pays off.',good:1},
+   {label:'Switch to backup oxygen tanks',sub:'uses oxygen',fx:()=>{addRes('o2',-15);addScore(20)},res:'Safe for now, but the backup tanks are finite: −15 O₂.'},
+   {label:'Ignore the alarm',fx:()=>{addRes('o2',-10);dmg(12,'bad air from an ignored alarm')},res:'The air quality drops: −12 HP, −10 O₂. Never ignore life-support alarms!'}]})},
+ {label:'Check the supplies at the storage rack',targets:tg([POS.store]),prompt:'Check inventory',onAct:()=>modal({title:'📦 SUPPLY SHORTAGE',body:'<p>A water-line leak cost you supplies. Choose a ration plan for the next sols.</p>',choices:[
+   {label:'Normal rations',fx:()=>{addRes('food',-6);addRes('h2o',-6);addScore(20)},res:'Balanced plan. −6 FOOD, −6 H₂O.',good:1},
+   {label:'Strict rationing',sub:'saves supplies, tiring',fx:()=>{addRes('food',-2);addRes('h2o',-2);dmg(5,'exhaustion');addScore(30)},res:'You save supplies but feel weak: −5 HP.'},
+   {label:'Feast to boost morale',fx:()=>{addRes('food',-18);addRes('h2o',-10);addRes('hp',6);addScore(5)},res:'You feel great (+6 HP) but used a lot: −18 FOOD, −10 H₂O.'}]})}]},
+{lvl:5,title:'Final Mission',brief:'Run a science experiment, harvest your crops, inspect the base and make sure everything is ready for long-term survival.',fact:'NASA’s Perseverance rover carries MOXIE, a device that made oxygen from the Martian atmosphere.',
+ steps:()=>[
+ {label:'Run the science experiment in the lab',targets:tg([POS.lab]),prompt:'Start experiment',onAct:()=>modal({title:'🧪 EXPERIMENT: MOXIE',body:'<p>Your oxygen generator works like MOXIE. Which gas from the Martian air does it split to make oxygen?</p>',choices:[
+   {label:'Carbon dioxide (CO₂)',fx:()=>{addScore(60);addRes('o2',20)},res:'Correct! MOXIE splits CO₂ into oxygen and carbon monoxide. +20 O₂.',good:1},
+   {label:'Nitrogen (N₂)',fx:()=>addScore(10),res:'Not quite. Nitrogen is only ~2.7% of the air. The answer is carbon dioxide.'},
+   {label:'Argon (Ar)',fx:()=>addScore(10),res:'Not quite. Argon is a noble gas and does not react. The answer is carbon dioxide.'}]})},
+ {label:'Harvest the 3 crop trays',targets:tg([0,1,2].map(i=>[POS.gh[0]+(i-1)*2.4,POS.gh[1]+2.2])),prompt:'Harvest',onAct:i=>{const y=Math.round((6+14*F.crop*F.cq)*(hasTech('gh')?1.3:1));addRes('food',y);F.harvested[i]=1;updateCrops();toast('🥬 Harvest +'+y+' FOOD')}},
+ {label:'Check water and oxygen at life support',targets:tg([POS.life]),prompt:'Check systems',onAct:()=>info('📋 SYSTEMS REPORT','<table><tr><td>Oxygen</td><td>'+Math.round(R.o2)+'%</td></tr><tr><td>Water</td><td>'+Math.round(R.h2o)+'%</td></tr><tr><td>Food</td><td>'+Math.round(R.food)+'%</td></tr><tr><td>Power</td><td>'+Math.round(R.pwr)+'%</td></tr></table>')},
+ {label:'Inspect the habitat exterior (3 points)',targets:tg([polar(.9,9),polar(3.14,9),polar(5.4,9)]),auto:true,onAct:()=>toast('🔍 Inspection point OK')},
+ {label:'Run the final systems check',targets:tg([POS.lab]),prompt:'Final check',score:50,onAct:()=>{}}]}
+];
+
+/* ================= MISSION FLOW ================= */
+function refreshMarkers(){const s=curStep;markers.forEach(m=>m.g.visible=false);if(!s)return;
+ const pts=s.targets?s.targets.filter(t=>!t.done).map(t=>[t.x,t.z]):(s.mark||[]);
+ pts.slice(0,4).forEach((p,i)=>{const m=markers[i];m.g.position.set(p[0],H(p[0],p[1]),p[1]);m.g.visible=true;const c=s.danger?0xff9a40:0x66e8ff;m.bm.color.setHex(c);m.rm.color.setHex(s.danger?0xffc080:0xaef6ff)})}
+function startStep(){curStep=steps[stepI];const s=curStep;
+ if(s.targets)for(const t of s.targets)if(s.model&&!t.obj){const o=s.model(t.x,t.z);o.position.set(t.x,H(t.x,t.z),t.z);props.add(o);t.obj=o}
+ waitLeft=s.wait||0;if(s.onStart)s.onStart();refreshMarkers();refreshHUD()}
+function nearest(){const s=curStep;let best=null,bd=1e9;if(!s)return null;
+ if(s.targets){for(const t of s.targets){if(t.done)continue;const d=Math.hypot(t.x-P.x,t.z-P.z);if(d<bd){bd=d;best=t}}}
+ else if(s.mark){for(const m of s.mark){const d=Math.hypot(m[0]-P.x,m[1]-P.z);if(d<bd){bd=d;best={x:m[0],z:m[1]}}}}
+ return best?{t:best,d:bd}:null}
+function perform(t){const s=curStep;t.done=true;if(t.obj&&!s.keep){props.remove(t.obj);t.obj=null}beep(660,.12);addScore(s.score||10);
+ if(s.onAct)s.onAct(t.i,t);if(s.targets.every(x=>x.done))finishStep();else{refreshMarkers();refreshHUD()}}
+function finishStep(){const s=curStep;curStep=null;if(s.onEnd)s.onEnd();beep(880,.15);stepI++;if(stepI>=steps.length){markers.forEach(m=>m.g.visible=false);endDay()}else startStep()}
+function act(){if(mode!=='play')return;beep(300,.03,'square',.02);if(cine){cine.t=cine.dur;return}if(modalOpen||!curStep)return;
+ if(curStep.targets&&!curStep.auto){const n=nearest();if(n&&n.d<3.6)perform(n.t);else toast('Move closer to the glowing beam, then press ACT.',1800)}else toast('Follow the marker. This step needs no button.',1800)}
+function refreshHUD(){const s=curStep,D=DAYS[day-1];ui.dayLine.textContent='SOL '+day+' · LEVEL '+D.lvl+(s?' · STEP '+(stepI+1)+'/'+steps.length:'');ui.dayTitle.textContent=D.title;ui.siteLine.textContent=site.name;
+ if(!s){ui.objLabel.textContent='…';ui.objSub.textContent='';return}
+ ui.objLabel.textContent=s.label;let sub='';if(s.targets&&s.targets.length>1)sub=s.targets.filter(t=>t.done).length+'/'+s.targets.length+' done'+(s.auto?' · walk into the beam':'  · ACT: '+(s.prompt||''));else if(s.targets)sub=s.auto?'Walk into the beam':'ACT: '+(s.prompt||'');else if(s.cond)sub=s.hint||'';if(carrying)sub='❄ Carrying ice · '+sub;ui.objSub.textContent=sub}
+function structIntro(){}
+function beginDay(d,opt={}){
+ day=d;const D=DAYS[d-1];if(!opt.retry){
+  F.fold=[0,0,0];F.shield=0;F.heat=0;F.harvested=F.harvested||[0,0,0];if(d>=5&&!F.wp){F.wp=1;buildWP(true)}
+  if(d===9){addRes('h2o',-12);addRes('food',-8)}}
+ tod=7;stormTarget=0;storm=opt.retry?0:storm;radAlert=false;coldSnap=(d===8);carrying=false;S.carry.visible=false;failed=false;evT=rnd(55,90);
+ props.clear();snapshot={R:Object.assign({},R),score,F:JSON.parse(JSON.stringify(F)),day:d};
+ steps=D.steps();stepI=0;curStep=null;markers.forEach(m=>m.g.visible=false);refreshHUD();
+ const go=()=>modal({title:'SOL '+d+' · '+LEVELS[D.lvl-1].toUpperCase(),body:'<p><b>'+D.title+'</b></p><p>'+D.brief+'</p>'+fact(D.fact),btn:'START SOL ▸',after:()=>{stepI=0;startStep()}});
+ if(d===1&&opt.fresh)startLanding(go);else go()}
+function startLanding(cb){astro.visible=false;S.lander.position.y=70;S.flame.visible=true;cine={t:0,dur:8,cb};ui.hud.style.display='block'}
+function updateCine(dt){cine.t+=dt;const k=Math.min(1,cine.t/cine.dur),y=70*Math.pow(1-k,2.2);S.lander.position.y=y;S.flame.scale.set(1,.8+Math.random()*.4,1);S.flame.visible=k<.97;
+ ui.promptB.style.display='block';ui.promptB.textContent=k<.35?'🔥 ENTRY: heat shield glowing…':k<.85?'🚀 DESCENT: retro-rockets firing…':'🛬 LANDING…';
+ camera.position.set(13,5+k*1.5,17);camera.lookAt(0,Math.max(2,y*.6+2),0);
+ if(k>=1){S.lander.position.y=0;puff();astro.visible=true;P.set(0,0,3.4);ui.promptB.style.display='none';beep(120,.5,'sawtooth',.06);const cb=cine.cb;cine=null;toast('🛬 TOUCHDOWN! Welcome to Mars.',3000);setTimeout(()=>cb&&cb(),1200)}}
+function endDay(){
+ const D=DAYS[day-1],avg=(R.o2+R.h2o+R.food+R.pwr)/4,bonus=Math.round(avg*.8)+Math.round(R.hp*.2);addScore(bonus);
+ if(F.seeds>=3){F.crop=Math.min(1,F.crop+(hasTech('gh')?.3:.2));updateCrops()}
+ if(F.life){addRes('o2',15);addRes('hp',10)}else addRes('hp',3);
+ const lvlDone=day%2===0;let techTxt='',newTech=null;
+ if(lvlDone){save.unlocked=Math.max(save.unlocked,D.lvl+1);const tk=TECH[D.lvl-1];if(tk&&!hasTech(tk.k)){save.tech.push(tk.k);newTech=tk}}
+ save.best=Math.max(save.best,score);persist();
+ const rows='<table><tr><td>Oxygen</td><td>'+Math.round(R.o2)+'%</td></tr><tr><td>Water</td><td>'+Math.round(R.h2o)+'%</td></tr><tr><td>Food</td><td>'+Math.round(R.food)+'%</td></tr><tr><td>Power</td><td>'+Math.round(R.pwr)+'%</td></tr><tr><td>Health</td><td>'+Math.round(R.hp)+'%</td></tr><tr><td>Resource bonus</td><td>+'+bonus+'</td></tr><tr><td>Total score</td><td>'+score+'</td></tr></table>';
+ if(day>=10){const rank=score>=1500?'MARS COMMANDER':score>=1100?'SENIOR ASTRONAUT':score>=700?'MISSION SPECIALIST':'ASTRONAUT CADET';
+  info('🏆 MISSION COMPLETE','<p>You survived all 10 sols and built a self-sustaining Mars research base.</p>'+rows+'<p style="text-align:center;font-size:15px"><b style="color:#ffd04a">RANK: '+rank+'</b></p><p>Then, at the very end of your log, your radio crackles. A faint, distant signal…</p><p style="color:#8be9ff;font-family:monospace">“…MARSVERSE, do you copy?…”</p><p>Earth may still be out there. Your new beginning for humanity has only just started.</p>',()=>{});
+  modal({title:'PLAY AGAIN?',body:'<p>Try a different landing site: the terrain, ice and sunlight change, and random events will not repeat.</p>',choices:[{label:'⌂ BACK TO TITLE',fx:toTitle}]});return}
+ const next=()=>{day++;if(F.life)toast('🛏 You rest in the habitat: +15 O₂, +10 HP');beginDay(day)};
+ info((lvlDone?'🎖 LEVEL '+D.lvl+' COMPLETE · ':'')+'SOL '+day+' COMPLETE',rows+(lvlDone&&D.lvl<5?'<p>🔓 <b>Level '+(D.lvl+1)+': '+LEVELS[D.lvl]+'</b> unlocked!</p>':'')+(newTech?'<div class="fact">'+newTech.icon+' <b>NEW TECH: '+newTech.name+'</b><br>'+newTech.desc+'</div>':''),next)}
+function fail(reason){if(failed)return;failed=true;modal({title:'⚠ MISSION FAILED',body:'<p>'+reason+'</p>'+fact('Real astronauts train for emergencies again and again. Watch your O₂, avoid danger and use the habitat to recover.'),choices:[{label:'↺ RETRY THIS SOL',fx:restoreSol},{label:'⌂ BACK TO TITLE',alt:true,fx:toTitle}]})}
+function restoreSol(){MQ.length=0;Object.assign(R,snapshot.R);score=snapshot.score;ui.score.textContent=score;F=JSON.parse(JSON.stringify(snapshot.F));buildWorld();syncStructures();P.set(0,0,3.4);astro.visible=true;beginDay(snapshot.day,{retry:true})}
+function openMenu(){if(modalOpen||cine||mode!=='play')return;modal({title:'⏸ PAUSED',body:'<p>Sol '+day+' · '+DAYS[day-1].title+'<br>Score '+score+'</p>',choices:[{label:'▶ RESUME'},{label:'📋 MISSION BRIEFING',fx:()=>{const D=DAYS[day-1];info('SOL '+day+' · '+D.title,'<p>'+D.brief+'</p>'+fact(D.fact))}},{label:'🔧 TECHNOLOGY',fx:showTech},{label:'↺ RESTART THIS SOL',alt:true,fx:restoreSol},{label:'⌂ QUIT TO TITLE',alt:true,fx:toTitle}]})}
+function showTech(){info('🔧 TECHNOLOGY','<p>Unlock advanced systems by finishing levels. They stay unlocked when you replay.</p>'+TECH.map(t=>'<div class="fact" style="opacity:'+(hasTech(t.k)?1:.45)+'">'+t.icon+' <b>'+t.name+'</b> '+(hasTech(t.k)?'✅':'🔒')+'<br>'+t.desc+'</div>').join(''))}
+
+/* ================= RANDOM EVENTS ================= */
+const EVENTS=[
+ ()=>{addRes('pwr',-5);return '⚙ Equipment glitch: a sensor fault drained −5 PWR'},
+ ()=>{if(F.solar){addRes('pwr',-4);return '🌪 A dust devil dusted the panels: −4 PWR'}addRes('o2',-2);return '🌪 A dust devil swept past: −2 O₂'},
+ ()=>{addRes('pwr',-3);addRes('o2',-2);return '🌡 Temperature dip: suit heaters work harder'},
+ ()=>{if(isInside())return '☢ Minor radiation spike measured. The habitat shielded you.';dmg(3*(hasTech('rad')?.25:1),'a radiation spike');return '☢ Minor radiation spike outdoors: −3 HP. Stay inside when you can!'},
+ ()=>{addScore(15);return '💎 Lucky find: you spotted a mineral vein (+15)'}];
+function randomEvent(){toast(EVENTS[Math.floor(Math.random()*EVENTS.length)](),3500);beep(200,.2,'sawtooth',.03)}
+
+/* ================= SIMULATION ================= */
+const sunFactor=()=>{let live=0;for(let i=0;i<F.solar;i++)if(!(S.solar[i]&&S.solar[i].userData.folded)&&!F.fold[i])live++;return live/3};
+const lowCD={};
+function tickResources(dt){
+ const inside=isInside(),life=inside&&F.life&&R.pwr>0,o2g=hasTech('o2'),rec=hasTech('rec')?.5:1;
+ let o2=life?-.008:-.06*(o2g?.8:1);if(life&&R.o2<100)o2+=o2g?.4:.2;
+ let pw=-.026-(life?.014:0)-(coldSnap&&!inside?.03:0)-storm*.05;if(F.solar&&F.batt)pw+=.07*sunFactor()*(1-storm*.92)*(.45+.55*sunE())*site.sun;
+ let hp=0;if(life&&R.o2>15)hp+=.05;if(R.o2<=0){hp-=2;lastCause='you ran out of oxygen'}
+ if(radAlert){const k=hasTech('rad')?.25:1;if(!inside){hp-=.8*k;lastCause='radiation exposure'}else if(!F.shield){hp-=.2*k;lastCause='radiation exposure'}}
+ addRes('o2',o2*dt);addRes('h2o',-.018*rec*dt);addRes('food',-.014*dt);addRes('pwr',pw*dt);R.hp=clamp(R.hp+hp*dt,0,100);
+ for(const[k,l]of[['o2','OXYGEN'],['h2o','WATER'],['food','FOOD'],['pwr','POWER'],['hp','HEALTH']]){lowCD[k]=(lowCD[k]||0)-dt;if(R[k]<25&&lowCD[k]<=0){lowCD[k]=14;toast('⚠ LOW '+l+(k==='o2'?(F.life?': get inside the habitat to refill':': find supplies!'):''),2600);beep(240,.25,'square',.04)}}
+ if(R.hp<=0)fail('Your astronaut could not survive: '+(lastCause||'critical damage')+'.')}
+function stepLogic(dt){const s=curStep;if(!s)return;
+ if(s.targets&&s.auto){const n=nearest();if(n&&n.d<3.4){perform(n.t);return}}
+ if(s.wait){waitLeft-=dt;if(waitLeft<=0){finishStep();return}}
+ if(s.cond&&s.cond()){finishStep()}}
+function blocked(x,z){if(Math.hypot(x,z)<1.9)return true;if(F&&F.hab&&S.hab){const dx=x-HAB.x,dz=z-HAB.z,d=Math.hypot(dx,dz);if(d>4.75&&d<5.85&&Math.abs(Math.atan2(dx,dz))>.4)return true}return false}
+function tryMove(dx,dz){let nx=P.x+dx,nz=P.z+dz;if(blocked(nx,nz)){if(!blocked(nx,P.z))nz=P.z;else if(!blocked(P.x,nz))nx=P.x;else return}const r=Math.hypot(nx,nz);if(r>66){nx*=66/r;nz*=66/r}P.x=nx;P.z=nz}
+function movePlayer(dt){
+ const f=(keys.forward?1:0)-(keys.back?1:0),s=(keys.right?1:0)-(keys.left?1:0);let moving=false;
+ if(f||s){const mv=new THREE.Vector3(s,0,-f).normalize().applyAxisAngle(Y,yaw);const sp=5.6*(storm>.6&&!isInside()?.75:1);tryMove(mv.x*sp*dt,mv.z*sp*dt);
+  const ta=Math.atan2(mv.x,mv.z);let da=ta-astro.rotation.y;da=Math.atan2(Math.sin(da),Math.cos(da));astro.rotation.y+=da*Math.min(1,dt*12);moving=true}
+ const g=H(P.x,P.z);if(keys.jump&&onGround){vy=4.9;onGround=false;beep(300,.1,'triangle',.03)}
+ vy-=7.5*dt;P.y+=vy*dt;if(P.y<=g){P.y=g;vy=0}onGround=P.y-g<.12&&vy<=0;
+ walkT+=dt*9*(moving&&onGround?1:0);walkAmp+=((moving&&onGround?1:0)-walkAmp)*Math.min(1,dt*10);const sw=Math.sin(walkT)*.75*walkAmp,air=onGround?0:-.9;
+ A.legL.rotation.x=sw;A.legR.rotation.x=-sw;A.armL.rotation.x=-sw*.8+air;A.armR.rotation.x=sw*.8+air}
+function animations(dt,T){
+ for(let i=anims.length-1;i>=0;i--){const a=anims[i];a.t+=dt;const k=Math.min(1,a.t/a.dur);a.g.scale.setScalar(Math.max(.01,easeBack(k)));if(k>=1){a.g.scale.setScalar(1);anims.splice(i,1)}}
+ for(const g of S.solar)if(g){const tr=g.userData.folded?-.02:-.85;g.userData.piv.rotation.x+=(tr-g.userData.piv.rotation.x)*Math.min(1,dt*3)}
+ if(S.rig&&S.rig.userData.pipe){S.rig.userData.pipe.rotation.y+=dt*8;S.rig.userData.pipe.position.y=1.8+Math.sin(T*6)*.05}
+ if(S.antLight)S.antLight.visible=Math.floor(T*1.5)%2===0;
+ for(const m of markers)if(m.g.visible){m.ring.scale.setScalar(1+.15*Math.sin(T*4));m.bm.opacity=.22+.1*Math.sin(T*3)}
+ if(S.hab)S.hab.children.forEach(c=>{});}
+function updateHUDLive(){
+ uiBars.o2&&0;for(const k in uiBars){const v=R[k];uiBars[k].b.style.width=v.toFixed(0)+'%';uiBars[k].el.classList.toggle('low',v<25)}
+ const a=(Math.min(tod,17.6)-6)/12*Math.PI,t=Math.round(-78+52*Math.sin(a)-(coldSnap?22:0)),inside=isInside()&&F.life;
+ ui.temp.textContent=inside?'🌡 21°C (habitat)':'🌡 EXT '+t+'°C';
+ const rad=radAlert?(inside?(F.shield?12:45):420):(inside?9:27);ui.rad.textContent='☢ '+rad+' µSv/h (sim)';
+ let w='';if(radAlert)w='☢ RADIATION ALERT';else if(storm>.3)w='🌪 DUST STORM';else if(R.o2<25)w='⚠ LOW OXYGEN';else if(coldSnap)w='🥶 COLD SNAP';
+ ui.warnB.style.display=w?'block':'none';ui.warnB.textContent=w;
+ const n=nearest(),s=curStep;
+ if(n&&!cine){const dx=n.t.x-P.x,dz=n.t.z-P.z,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);const ang=Math.atan2(dx*rx+dz*rz,dx*fx+dz*fz);ui.arrow.style.transform='rotate('+ang+'rad)';ui.dist.textContent=Math.round(n.d)+' m';ui.arrow.style.visibility='visible'}else{ui.arrow.style.visibility='hidden';ui.dist.textContent=''}
+ const near=!!(n&&s&&s.targets&&!s.auto&&n.d<3.6);ui.actBtn.classList.toggle('ready',near);
+ if(!cine){ui.promptB.style.display=near?'block':'none';if(near)ui.promptB.textContent='▶ ACT: '+(s.prompt||'Interact')}
+ if(s&&s.wait){ui.objSub.textContent='⏱ '+Math.ceil(waitLeft)+' s remaining'}}
+function updateGame(dt,T){
+ const active=!modalOpen;
+ if(cine&&active)updateCine(dt);
+ else if(active){movePlayer(dt);tod=Math.min(17.6,tod+dt*(12/420));tickResources(dt);stepLogic(dt);
+  evT-=dt;if(evT<=0){evT=rnd(70,115);if(curStep&&!curStep.danger&&day!==7&&day!==8)randomEvent()}}
+ animations(active?dt:0,T);updateLight(dt,T);updateDust(dt,T);updateBurst(dt);
+ hudT+=dt;if(hudT>.08){hudT=0;updateHUDLive()}
+ sky.position.copy(camera.position);
+ if(!cine){const tgt=new THREE.Vector3(P.x,P.y+1.5,P.z),d=isInside()?6.2:8.8,h=Math.cos(pitch)*d;
+  const des=new THREE.Vector3(tgt.x+Math.sin(yaw)*h,tgt.y+Math.sin(pitch)*d,tgt.z+Math.cos(yaw)*h);des.y=Math.max(des.y,H(des.x,des.z)+1.1);
+  camera.position.lerp(des,1-Math.exp(-dt*9));camera.lookAt(tgt);if(storm>.6){camera.position.x+=(Math.random()-.5)*.02*storm;camera.position.y+=(Math.random()-.5)*.02*storm}}}
+
+/* ================= WORLD BUILD / GAME START ================= */
+function buildWorld(){
+ anims.length=0;world.traverse(o=>{if(o.geometry)o.geometry.dispose()});scene.remove(world);world=new THREE.Group();scene.add(world);props.clear();
+ for(const k in S)delete S[k];S.solar=[];S.carry=astro.children.find(c=>c.geometry&&c.geometry.type==='BoxGeometry'&&c.position.y>2.5);
+ world.add(makeGround());scatter();buildLander();buildScanner();buildAntenna()}
+function startGame(d){
+ mode='play';ui.start.style.display='none';ui.story.style.display='none';ui.hud.style.display='block';MQ.length=0;modalOpen=false;ui.modal.style.display='none';
+ score=0;ui.score.textContent=0;Object.assign(R,d===1?{o2:70,h2o:75,food:75,pwr:80,hp:100}:{o2:90,h2o:85,food:85,pwr:90,hp:100});
+ F=structuresFor(d);storm=0;stormTarget=0;radAlert=false;cine=null;buildWorld();syncStructures();P.set(0,0,3.4);astro.visible=true;astro.rotation.y=Math.PI;yaw=0;pitch=.35;camera.position.set(0,5,12);
+ beginDay(d,{fresh:true})}
+function toTitle(){mode='menu';cine=null;MQ.length=0;modalOpen=false;ui.modal.style.display='none';ui.hud.style.display='none';ui.start.style.display='flex';ui.fxS.style.opacity=0;ui.fxR.style.opacity=0;storyPage=-1;markers.forEach(m=>m.g.visible=false);renderMenu()}
+
+/* ================= STORY ================= */
+const STORY=[
+ {t:'THE YEAR IS 2058.\n\nEarth is facing a serious environmental crisis. Scientists have decided that establishing a permanent human settlement on Mars is essential for the future of humanity.'},
+ {t:'You are selected as one of the astronauts for a special Mars colonisation mission.\n\nYour spacecraft leaves Earth successfully.'},
+ {t:'Everything is going according to plan… until a sudden communication failure occurs.\n\nYou try contacting Mission Control, but there is no response. You attempt to reconnect again and again, but every channel is silent.'},
+ {t:'⚠ SPACECRAFT COMPUTER\n\nEARTH CONNECTION: LOST.',cls:'red',speed:55},
+ {t:'You are now travelling towards Mars without knowing what has happened to Earth.\n\nYour survival depends on your ability to manage oxygen, water, food, energy and spacecraft systems. After landing, you must establish a safe habitat and prepare for the possibility that returning to Earth may never be possible.'},
+ {t:'The question:\n\nCan you build a new beginning for humanity on a planet where survival itself is a challenge?',speed:34}];
+let typing=null;
+function showStory(){mode='intro';storyPage=0;ui.start.style.display='none';ui.story.style.display='flex';typePage()}
+function typePage(){const p=STORY[storyPage];ui.stText.className=p.cls||'';ui.stText.textContent='';let i=0;clearInterval(typing);typing=setInterval(()=>{i++;ui.stText.textContent=p.t.slice(0,i);if(i>=p.t.length){clearInterval(typing);typing=null}},p.speed||22);
+ ui.stNext.textContent=storyPage===STORY.length-1?'BEGIN DESCENT 🚀':'NEXT ▸';ui.stProg.textContent=(storyPage+1)+' / '+STORY.length}
+ui.stNext.onclick=()=>{beep(440,.06);if(typing){clearInterval(typing);typing=null;ui.stText.textContent=STORY[storyPage].t;return}if(storyPage>=STORY.length-1){endStory();return}storyPage++;typePage()};
+ui.stSkip.onclick=()=>endStory();
+function endStory(){clearInterval(typing);typing=null;ui.story.style.display='none';storyPage=-1;startGame(1)}
+
+/* ================= TITLE SCREEN ================= */
+function renderMenu(){
+ const sc=$('siteChips');sc.innerHTML='';Object.entries(SITES).forEach(([k,s])=>{const b=document.createElement('button');b.className='chip'+(k===siteKey?' sel':'');b.textContent=s.name;b.onclick=()=>{siteKey=k;site=s;save.site=k;persist();renderMenu()};sc.appendChild(b)});
+ $('siteDesc').textContent=site.desc;
+ const qc=$('qChips');qc.innerHTML='';['LOW','BALANCED','HIGH'].forEach((n,i)=>{const b=document.createElement('button');b.className='chip'+(i===quality?' sel':'');b.textContent=n;b.onclick=()=>{quality=i;save.q=i;persist();applyQuality();renderMenu()};qc.appendChild(b)});
+ const ll=$('lvlList');ll.innerHTML='';LEVELS.forEach((n,i)=>{const open=i+1<=save.unlocked,b=document.createElement('button');b.className='lvl'+(open?'':' locked');b.innerHTML='<span>'+(open?'':'🔒 ')+'Level '+(i+1)+': '+n+'<small>Sols '+(i*2+1)+'–'+(i*2+2)+'</small></span><span>'+(open?'▶':'')+'</span>';if(open)b.onclick=()=>startGame(i*2+1);ll.appendChild(b)});
+ $('saveLine').textContent='Best score: '+save.best+' · Levels unlocked: '+save.unlocked+'/5 · Tech: '+save.tech.length+'/4'}
+$('beginBtn').onclick=()=>{beep(440,.08);showStory()};
+$('lvlBtn').onclick=()=>{const l=$('lvlList');l.style.display=l.style.display==='none'?'block':'none'};
+
+/* ================= INPUT ================= */
+document.querySelectorAll('[data-key]').forEach(b=>{const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('active');keys[k]=true;b.setPointerCapture(e.pointerId)});const end=()=>{b.classList.remove('active');keys[k]=false};b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);b.addEventListener('lostpointercapture',end)});
+const kmap={w:'forward',ArrowUp:'forward',s:'back',ArrowDown:'back',a:'left',ArrowLeft:'left',d:'right',ArrowRight:'right',' ':'jump'};
+addEventListener('keydown',e=>{if(kmap[e.key]){e.preventDefault();keys[kmap[e.key]]=true}if(e.key==='e'||e.key==='E'||e.key==='Enter')act();if(e.key==='Escape'||e.key==='p')openMenu()});
+addEventListener('keyup',e=>{if(kmap[e.key])keys[kmap[e.key]]=false});
+ui.actBtn.addEventListener('pointerdown',e=>{e.preventDefault();act()});ui.menuBtn.addEventListener('click',openMenu);
+let dragging=false,lx=0,ly=0;const cv=renderer.domElement;
+cv.addEventListener('pointerdown',e=>{if(mode!=='play'||modalOpen)return;dragging=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(!dragging)return;yaw-=(e.clientX-lx)*.005;pitch=clamp(pitch+(e.clientY-ly)*.004,-.1,1.15);lx=e.clientX;ly=e.clientY});
+cv.addEventListener('pointerup',()=>dragging=false);cv.addEventListener('pointercancel',()=>dragging=false);
+
+/* ================= QUALITY / RESIZE / LOOP ================= */
+function applyQuality(){
+ renderer.setPixelRatio(Math.min(devicePixelRatio,[1,1.3,2][quality]));renderer.setSize(innerWidth,innerHeight);
+ const sh=quality>0;renderer.shadowMap.enabled=sh;sun.castShadow=sh;const sz=quality===2?2048:1024;
+ if(sun.shadow.mapSize.x!==sz){sun.shadow.mapSize.set(sz,sz);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+ dustN=[120,260,520][quality];
+ scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true)});for(const k in M)M[k].needsUpdate=true}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();introCam.aspect=innerWidth/innerHeight;introCam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),T=performance.now()*.001;
+ if(mode!=='play'){updateIntro(dt,T);renderer.render(introScene,introCam);return}
+ updateGame(dt,T);renderer.render(scene,camera)}
+buildWorld();applyQuality();renderMenu();animate();
+</script>
+</body>
+</html>
